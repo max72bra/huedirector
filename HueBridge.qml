@@ -104,7 +104,7 @@ Item {
     }
 
     // cb(result, error): result is {rooms, lights} in the shape the UI uses,
-    // error "" or "unpaired" or "certchanged" or a message
+    // error "" or "unpaired" or "certchanged" or "unreachable" or a message
     function fetchAll(cb) {
         fetchWaiters.push(cb);
         Proc.runCommand(procPrefix + "fetch", curlArgs("resource").concat(["-m", "10", "-w", "\n%{http_code}"]), (stdout, exitCode) => {
@@ -126,7 +126,8 @@ Item {
     // kind: "light" | "grouped_light" | "scene". Debounced per resource, so slider drags send one request.
     // The debounce keeps only the last call, so bodies are merged: a toggle followed by a slider move
     // within 300 ms sends both. color and color_temperature exclude each other, the latest wins
-    function put(kind, id, body, cb) {
+    // immediate: skip the 300 ms debounce, for sleep/power off where logind gives only a few seconds
+    function put(kind, id, body, cb, immediate) {
         const merged = Object.assign({}, pendingBodies[id] ?? {}, body);
         if (body.color)
             delete merged.color_temperature;
@@ -154,7 +155,7 @@ Item {
                     console.warn("Hue Director: put callback failed:", e);
                 }
             }
-        }, 300);
+        }, immediate ? 0 : 300);
     }
 
     // stdout is the body plus a last line with the HTTP status (-w)
@@ -164,8 +165,9 @@ Item {
         // Pinned public key mismatch: replaced bridge, or another device on its address
         if (exitCode === 90)
             return { error: "certchanged" };
+        // No network or no bridge (e.g. right after resume): callers may retry, HueEvents shows the message
         if (exitCode === 6 || exitCode === 7 || exitCode === 28)
-            return { error: I18n.trFor("hueDirector", "Hue Bridge not reachable") };
+            return { error: "unreachable" };
         if (exitCode !== 0)
             return { error: I18n.trFor("hueDirector", "Request failed (curl exit %1)").arg(exitCode) };
         const cut = stdout.lastIndexOf("\n");

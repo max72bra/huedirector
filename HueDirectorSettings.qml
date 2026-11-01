@@ -164,14 +164,26 @@ PluginSettings {
             width: parent.width
             height: Math.max(targetSetting.height, actionGroup.height)
 
-            SelectionSetting {
+            // Not a SelectionSetting: PluginSettings reloads only its direct children when pluginService
+            // arrives, and settings nested in a Repeater can't find the page to save on (findSettings walks
+            // the parents). Bound to the page's loadValue/saveValue instead, like the on/off buttons
+            DDropdown {
                 id: targetSetting
+                readonly property string targetKey: "event_" + eventRow.modelData.key + "_target"
+                // "none" instead of "": the stored value of "Nothing"
+                readonly property var targetValues: ["none"].concat(root.targetOptions.map(o => o.value))
+                readonly property var targetLabels: [I18n.trFor("hueDirector", "Nothing")].concat(root.targetOptions.map(o => o.label))
+
                 width: parent.width - root.actionColumnWidth - Theme.spacingM
-                settingKey: "event_" + eventRow.modelData.key + "_target"
-                label: eventRow.modelData.label
-                // "none" instead of "": SelectionSetting saves the label when the value is empty
-                options: [{ label: I18n.trFor("hueDirector", "Nothing"), value: "none" }].concat(root.targetOptions)
-                defaultValue: "none"
+                text: eventRow.modelData.label
+                options: targetLabels
+                // loadValue reads SettingsData.pluginSettings, so this follows saves and the late pluginService
+                currentValue: targetLabels[Math.max(0, targetValues.indexOf(root.loadValue(targetKey, "none")))]
+                onValueChanged: newValue => {
+                    const i = targetLabels.indexOf(newValue);
+                    if (i >= 0)
+                        root.saveValue(targetKey, targetValues[i]);
+                }
             }
 
             // Index 0 = turn on, 1 = turn off; saved like SelectionSetting does (PluginSettings.saveValue)

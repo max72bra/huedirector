@@ -42,6 +42,8 @@ PluginComponent {
         if (err === "unpaired") {
             paired = false;
             error = "";
+        } else if (err === "unreachable") {
+            error = I18n.trFor("hueDirector", "Hue Bridge not reachable");
         } else if (err === "certchanged") {
             certChanged = true;
             error = I18n.trFor("hueDirector", "The bridge identity changed: pair again");
@@ -256,18 +258,45 @@ PluginComponent {
         return { kind: t.kind, id: t.id, on: (pluginData?.["event_" + e + "_action"] ?? defaultActions[e]) === "on" };
     }
 
-    // done() is always called, also when there is no rule, so sleep/shutdown can release the inhibitor
-    function run(e, done) {
+    // done() is always called, also when there is no rule, so sleep/shutdown can release the inhibitor.
+    // Those pass done and run without the debounce: logind waits only a few seconds.
+    // retries: attempts left when the bridge is unreachable, 2 s apart (resume: the network comes back later)
+    function run(e, done, retries) {
         const r = hueBridge.configured ? rule(e) : null;
         if (!r) {
             done?.();
             return;
         }
+        console.info("Hue Director: event", e, "->", r.kind, r.id, r.on ? "on" : "off");
         hueBridge.put(r.kind, r.id, { on: { on: r.on } }, err => {
+            if (err === "unreachable" && retries > 0) {
+                retryLater(() => run(e, done, retries - 1));
+                return;
+            }
             if (err)
                 console.warn("Hue Director: event", e, "failed:", err);
+            else
+                console.info("Hue Director: event", e, "done");
             done?.();
-        });
+        }, !!done);
+    }
+
+    // One pending retry at a time is enough: events of the same kind replace each other
+    property var retryFn: null
+
+    function retryLater(fn) {
+        retryFn = fn;
+        retryTimer.restart();
+    }
+
+    Timer {
+        id: retryTimer
+        interval: 2000
+        onTriggered: {
+            const fn = root.retryFn;
+            root.retryFn = null;
+            fn?.();
+        }
     }
 
     Pairing {
@@ -391,14 +420,55 @@ PluginComponent {
         function onSessionUnlocked() {
             root.run("unlock");
         }
-        function onPreparingForSleepChanged() {
-            if (SessionService.preparingForSleep) {
-                root.run("sleep", () => inhibitor.released = true);
-            } else {
-                inhibitor.released = false;
-                root.run("resume");
-            }
+        function onSleepRequestedChanged() {
+            if (!SessionService.sleepRequested || root.earlySleep)
+                return;
+            root.earlySleep = true;
+            root.earlySleepDone = false;
+            earlySleepTimeout.restart();
+            root.run("sleep", () => root.sleepRuleDone());
         }
+    }
+
+    // --- Suspend / resume. NetworkManager takes the network down as soon as logind announces the sleep
+    // (PrepareForSleep), so the rule runs earlier when the shell starts the suspend (power menu, idle):
+    // SessionService.sleepRequested turns true before logind is called. PrepareForSleep then only waits
+    // for that request and releases the inhibitor. Suspends the shell doesn't start (lid, terminal) still
+    // run on PrepareForSleep, racing the network
+    property bool earlySleep: false
+    property bool earlySleepDone: false
+    property bool sleepPending: false
+
+    function sleepRuleDone() {
+        earlySleepDone = true;
+        if (sleepPending)
+            inhibitor.released = true;
+    }
+
+    function onPrepareForSleep(sleeping) {
+        if (sleeping) {
+            if (earlySleep && earlySleepDone) {
+                inhibitor.released = true;
+            } else if (earlySleep) {
+                sleepPending = true;
+            } else {
+                root.run("sleep", () => inhibitor.released = true);
+            }
+        } else {
+            earlySleep = false;
+            sleepPending = false;
+            earlySleepTimeout.stop();
+            inhibitor.released = false;
+            // 15 attempts, 2 s apart: the network may need a while to come back after resume
+            root.run("resume", null, 15);
+        }
+    }
+
+    // A sleep request that never reaches logind (refused, cancelled) must not swallow the next one
+    Timer {
+        id: earlySleepTimeout
+        interval: 30000
+        onTriggered: root.earlySleep = false
     }
 
     // --- Power off / reboot: logind PrepareForShutdownWithMetadata(true, {type}) tells them apart
@@ -406,9 +476,18 @@ PluginComponent {
     // (false) means the shutdown was cancelled
     property string shutdownSubscriptionId: ""
     property bool shutdownHasMetadata: false
+    property string sleepSubscriptionId: ""
 
     function subscribeShutdown() {
-        if (shutdownSubscriptionId || !DMSService.capabilities.includes("dbus"))
+        if (!DMSService.capabilities.includes("dbus"))
+            return;
+        if (!sleepSubscriptionId)
+            DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "PrepareForSleep", response => {
+                sleepSubscriptionId = response.result?.subscriptionId ?? "";
+                if (!sleepSubscriptionId)
+                    console.warn("Hue Director: cannot watch suspend:", response.error);
+            });
+        if (shutdownSubscriptionId)
             return;
         const subscribe = (member, onFail) => DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", member, response => {
             const id = response.result?.subscriptionId ?? "";
@@ -438,6 +517,10 @@ PluginComponent {
             root.subscribeShutdown();
         }
         function onDbusSignalReceived(subscriptionId, data) {
+            if (subscriptionId && subscriptionId === root.sleepSubscriptionId) {
+                root.onPrepareForSleep(data?.body?.[0] === true);
+                return;
+            }
             if (!subscriptionId || subscriptionId !== root.shutdownSubscriptionId)
                 return;
             if (data?.body?.[0] === true) {

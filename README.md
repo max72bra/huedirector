@@ -82,7 +82,7 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 | Login | The shell starts within 2 minutes of the session start (restarting the shell later doesn't count) |
 | Screen locked / unlocked | Dux Shell lock screen |
 | Monitors off / on | Dux Shell power saving turning the monitors off (DPMS) and back on. Monitors turned off by other tools (e.g. hypridle) are not detected |
-| Suspend or hibernate / Resume | logind sleep signal; the system waits up to 5 seconds (logind `InhibitDelayMaxSec`) for the lights |
+| Suspend or hibernate / Resume | Suspend started from Dux Shell (power menu, idle): when the shell requests it, while the network is still up. Other suspends (lid, terminal): logind sleep signal, which may be too late, since NetworkManager takes the network down at the same moment. The system waits up to 5 seconds (logind `InhibitDelayMaxSec`). On resume the rule retries for up to 30 seconds until the network is back |
 | Power off / Reboot | logind shutdown signal, with the same wait. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
 | Logout | A small user service bound to `graphical-session.target` runs the action when the session ends. It needs a systemd-managed session (e.g. uwsm); otherwise logout rules don't run |
 

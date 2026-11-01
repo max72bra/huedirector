@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3
+
+- System event targets in the settings are saved again and show the stored value: as dropdowns nested in a list they were neither reloaded nor able to reach the page to save on.
+- Suspend rule works: NetworkManager takes the network down as soon as logind announces the sleep, so the rule now runs when the shell starts the suspend (power menu, idle), while the network is still up. Suspends started elsewhere (lid, terminal) still run on logind's signal.
+- Suspend/resume are watched directly on logind (PrepareForSleep) instead of through the shell's lock settings.
+- Resume rule retries for up to 30 seconds until the network and the bridge are back.
+- Sleep and power off rules skip the 300 ms command delay; every system event is written to the shell log with its outcome.
+
 ## 1.2.2
 
 - Pairing runs in the daemon: it keeps going if the popout closes while you walk to the bridge, and the popout and the settings page show the same pairing instead of being able to start two.
