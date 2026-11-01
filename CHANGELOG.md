@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+- Pairing runs in the daemon: it keeps going if the popout closes while you walk to the bridge, and the popout and the settings page show the same pairing instead of being able to start two.
+- "Forget bridge" also clears the old rooms and lights from the settings and the IPC commands.
+- Settings dropdowns are rebuilt only when rooms or lights are added, removed or renamed, not on every light change.
+
 ## 1.2.1
 
 - One connection to the bridge for the whole shell: state, event stream, polling and commands moved to the daemon, shared by every bar (multi-monitor) and by the settings page.

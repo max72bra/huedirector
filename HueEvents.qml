@@ -15,6 +15,7 @@ PluginComponent {
 
     // --- Bridge state, in the shape built by HueBridge.normalize()
     readonly property var bridge: hueBridge
+    readonly property var pairing: pairingItem
     property var rooms: []
     property var lights: []
     // grouped_light of the whole home, for "all off"
@@ -30,10 +31,6 @@ PluginComponent {
     readonly property int lightsOn: lights.filter(l => l.Reachable && l.HueData?.on?.on).length
     // Last error written to the log, so a bridge that stays offline doesn't log on every poll
     property string loggedError: ""
-
-    function roomLightsOf(roomId) {
-        return lights.filter(l => l.Parent?.Parent?.Id === roomId);
-    }
 
     // Shared by fetch and put. Returns true when err was handled as an error
     function handleError(err) {
@@ -56,7 +53,12 @@ PluginComponent {
 
     function refresh() {
         if (!hueBridge.configured) {
+            // Forgotten or never paired: drop the old bridge's rooms and lights (settings targets, IPC)
             paired = false;
+            rooms = [];
+            lights = [];
+            homeGroupedId = "";
+            loaded = false;
             return;
         }
         hueBridge.fetchAll((result, err) => {
@@ -266,6 +268,11 @@ PluginComponent {
                 console.warn("Hue Director: event", e, "failed:", err);
             done?.();
         });
+    }
+
+    Pairing {
+        id: pairingItem
+        bridge: hueBridge
     }
 
     HueBridge {

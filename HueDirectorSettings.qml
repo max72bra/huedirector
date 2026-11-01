@@ -12,15 +12,25 @@ PluginSettings {
 
     // State lives in the daemon (HueEvents.qml): no requests of our own, the options follow live changes
     readonly property var hue: PluginService.pluginDaemonInstances["hueDirector"] ?? null
-    readonly property var roomOptions: (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label))
+    property var roomOptions: []
     // Targets for the system event rules and the favorite light, values as read by HueBridge.parseTarget()
-    readonly property var targetOptions: {
+    property var targetOptions: []
+    // Ids and names only: the options are rebuilt when these change, not on every brightness event,
+    // which would reset a dropdown while it is open
+    readonly property string optionsKey: JSON.stringify([hue?.homeGroupedId ?? "", (hue?.rooms ?? []).map(r => [r.Id, r.Name, r.GroupedLight?.HueData?.id ?? ""]), (hue?.lights ?? []).map(l => [l.Id, l.Name])])
+
+    onOptionsKeyChanged: rebuildOptions()
+    Component.onCompleted: rebuildOptions()
+
+    function rebuildOptions() {
         const byLabel = (a, b) => a.label.localeCompare(b.label);
+        roomOptions = (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort(byLabel);
         const rooms = (hue?.rooms ?? []).filter(r => r.GroupedLight).map(r => ({ label: I18n.trFor("hueDirector", "Room · %1").arg(r.Name), value: "grouped_light:" + r.GroupedLight.HueData.id })).sort(byLabel);
         const lights = (hue?.lights ?? []).map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
         const home = hue?.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + hue.homeGroupedId }] : [];
-        return home.concat(rooms, lights);
+        targetOptions = home.concat(rooms, lights);
     }
+
     // Width of the on/off buttons column (two small icon buttons)
     readonly property int actionColumnWidth: 112
 
@@ -46,7 +56,7 @@ PluginSettings {
     }
 
     PairingPanel {
-        bridge: root.hue?.bridge ?? null
+        hue: root.hue
     }
 
     SelectionSetting {

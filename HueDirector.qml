@@ -244,7 +244,7 @@ PluginComponent {
             // (PairingPanel already says "Not paired"; certChanged shows its error here)
             detailsText: root.paired ? root.error : ""
             PairingPanel {
-                bridge: root.hue?.bridge ?? null
+                hue: root.hue
                 visible: root.needsPairing
             }
 

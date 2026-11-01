@@ -1,103 +1,27 @@
 import QtQuick
-import Quickshell.Io
 import qs.Common
-import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 
-// Pairs with a Hue Bridge (HueBridge.pairScript), in the popout (first time) and in settings (again)
+// View of the daemon's pairing (Pairing.qml), in the popout (first time) and in settings (again):
+// both show the same pairing, which keeps running when the popout closes
 Column {
     id: panel
 
-    // HueBridge instance of the host component
-    required property var bridge
+    // The daemon (HueEvents.qml): hue.pairing and hue.bridge
+    required property var hue
+    readonly property var pairing: hue?.pairing ?? null
 
-    readonly property int timeoutSeconds: 90
     readonly property bool validIp: ipField.text === "" || /^((25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(25[0-5]|2[0-4]\d|1?\d?\d)$/.test(ipField.text)
-
-    readonly property string bridgeIp: bridge?.configured ? bridge.ip : ""
-    property bool waiting: false
-    property bool succeeded: false
-    property bool cancelled: false
-    property int secondsLeft: 0
-    // The timeout also covers discovery and the certificate check, so the countdown counts from here
-    property double startedAt: 0
-    property string lastError: ""
-    // "", "success" or "failed"
-    property string result: ""
-    property string message: ""
+    readonly property string bridgeIp: hue?.bridge?.configured ? hue.bridge.ip : ""
+    readonly property bool waiting: pairing?.waiting ?? false
 
     width: parent.width
     spacing: Theme.spacingS
 
     function startPairing() {
-        if (!validIp || waiting)
-            return;
-        lastError = "";
-        cancelled = false;
-        succeeded = false;
-        result = "";
-        message = I18n.trFor("hueDirector", "Looking for the Hue Bridge…");
-        startedAt = Date.now();
-        secondsLeft = timeoutSeconds;
-        // timeout: the script polls for the button until it is pressed
-        setup.command = ["timeout", String(timeoutSeconds), "sh", "-c", bridge.pairScript, "sh", bridge.stateDir, ipField.text];
-        setup.running = true;
-        waiting = true;
-    }
-
-    Process {
-        id: setup
-
-        stdout: SplitParser {
-            // Status lines from HueBridge.pairScript
-            onRead: line => {
-                if (line.startsWith("IP "))
-                    panel.message = I18n.trFor("hueDirector", "Connecting to the bridge at %1…").arg(line.slice(3));
-                else if (line === "WAIT") {
-                    countdown.triggered();
-                    countdown.start();
-                }
-                else if (line === "OK")
-                    panel.succeeded = true;
-                else if (line === "ERR notfound")
-                    panel.lastError = I18n.trFor("hueDirector", "Hue Bridge not found: enter its IP address");
-                else if (line === "ERR unreachable")
-                    panel.lastError = I18n.trFor("hueDirector", "Hue Bridge not reachable at this address");
-                else if (line === "ERR notbridge")
-                    panel.lastError = I18n.trFor("hueDirector", "No Hue Bridge at this address");
-                else if (line.startsWith("ERR"))
-                    panel.lastError = line.slice(4) || I18n.trFor("hueDirector", "Pairing failed");
-            }
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            countdown.stop();
-            panel.waiting = false;
-            if (panel.succeeded && !panel.cancelled) {
-                panel.result = "success";
-                panel.message = I18n.trFor("hueDirector", "Paired with the Hue Bridge");
-                // Every HueBridge instance (widget, settings) reloads its config on this
-                PluginService.setGlobalVar("hueDirector", "pairingRevision", PluginService.getGlobalVar("hueDirector", "pairingRevision", 0) + 1);
-                return;
-            }
-            panel.result = "failed";
-            if (panel.cancelled)
-                panel.message = I18n.trFor("hueDirector", "Pairing cancelled");
-            else if (exitCode === 124)
-                panel.message = I18n.trFor("hueDirector", "The bridge button was not pressed within %1 seconds").arg(panel.timeoutSeconds);
-            else if (panel.lastError)
-                panel.message = panel.lastError;
-            else
-                panel.message = I18n.trFor("hueDirector", "Pairing failed (exit %1)").arg(exitCode);
-        }
-    }
-
-    Timer {
-        id: countdown
-        interval: 1000
-        repeat: true
-        onTriggered: panel.secondsLeft = Math.max(0, panel.timeoutSeconds - Math.round((Date.now() - panel.startedAt) / 1000))
+        if (validIp && !waiting)
+            pairing?.start(ipField.text);
     }
 
     StyledText {
@@ -142,10 +66,7 @@ Column {
             visible: panel.waiting
             text: I18n.trFor("hueDirector", "Cancel")
             backgroundColor: Theme.secondaryContainer
-            onClicked: {
-                panel.cancelled = true;
-                setup.running = false;
-            }
+            onClicked: panel.pairing?.cancel()
         }
 
         // Two clicks: forgetting means pairing again with the bridge button
@@ -165,10 +86,7 @@ Column {
                     return;
                 }
                 armed = false;
-                panel.bridge.forget(() => {
-                    panel.result = "";
-                    panel.message = I18n.trFor("hueDirector", "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.");
-                });
+                panel.pairing?.forget();
             }
 
             Timer {
@@ -184,7 +102,7 @@ Column {
         visible: text !== ""
         wrapMode: Text.WordWrap
         font.pixelSize: Theme.fontSizeMedium
-        color: panel.result === "failed" ? Theme.error : (panel.result === "success" ? Theme.primary : Theme.surfaceText)
-        text: panel.waiting && countdown.running ? I18n.trFor("hueDirector", "Press the button on your Hue Bridge now (%1 s left)").arg(panel.secondsLeft) : panel.message
+        color: panel.pairing?.result === "failed" ? Theme.error : (panel.pairing?.result === "success" ? Theme.primary : Theme.surfaceText)
+        text: panel.pairing?.counting ? I18n.trFor("hueDirector", "Press the button on your Hue Bridge now (%1 s left)").arg(panel.pairing.secondsLeft) : (panel.pairing?.message ?? "")
     }
 }
