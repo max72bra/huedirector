@@ -35,8 +35,13 @@ PluginComponent {
     }
 
     function refresh() {
-        fetch("room", data => rooms = data);
-        fetch("light", data => lights = data);
+        // Bridge order is not stable (scenes move after activation): sort everything by name
+        const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
+        fetch("room", data => {
+            data.forEach(r => (r.Scenes ?? []).sort(byName));
+            rooms = data.sort(byName);
+        });
+        fetch("light", data => lights = data.sort(byName));
     }
 
     // kind: "room" | "light". Proc debounce (300ms per resource) collapses slider drags into one call
@@ -129,6 +134,19 @@ PluginComponent {
                             required property int index
                             readonly property var room: root.rooms[index]
                             readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
+                            readonly property var scenes: room?.Scenes ?? []
+                            // status.active is "inactive", "static" or "dynamic_palette"
+                            readonly property string activeSceneId: scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive")?.Id ?? ""
+                            // Clicked scene held until the bridge reports it active, like ControlRow.pendingBrightness
+                            property string pendingSceneId: ""
+
+                            onActiveSceneIdChanged: if (activeSceneId === pendingSceneId) pendingSceneId = ""
+
+                            Timer {
+                                id: pendingSceneTimeout
+                                interval: 3000
+                                onTriggered: roomItem.pendingSceneId = ""
+                            }
 
                             width: parent.width
                             spacing: Theme.spacingXS
@@ -140,9 +158,27 @@ PluginComponent {
                                 isOn: roomItem.room?.GroupedLight?.HueData?.on?.on ?? false
                                 brightness: Math.round(roomItem.room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
                                 dimmable: !!roomItem.room?.GroupedLight?.HueData?.dimming
-                                expandable: roomItem.roomLights.length > 0
+                                expandable: roomItem.roomLights.length > 0 || roomItem.scenes.length > 0
                                 onToggleRequested: on => root.setResource("room", roomItem.room.Id, [on ? "--on" : "--off"])
                                 onBrightnessRequested: value => root.setResource("room", roomItem.room.Id, ["--on", "--brightness", String(value)])
+                            }
+
+                            DFilterChips {
+                                x: Theme.spacingL
+                                width: roomItem.width - x
+                                visible: roomControl.expanded && roomItem.scenes.length > 0
+                                showCounts: false
+                                model: roomItem.scenes.map(s => ({ label: s.Name }))
+                                onSelectionChanged: index => {
+                                    roomItem.pendingSceneId = roomItem.scenes[index].Id;
+                                    pendingSceneTimeout.restart();
+                                    root.setResource("scene", roomItem.pendingSceneId, []);
+                                }
+
+                                // Chips assign currentIndex on click, which would break a plain binding
+                                Binding on currentIndex {
+                                    value: roomItem.scenes.findIndex(s => s.Id === (roomItem.pendingSceneId || roomItem.activeSceneId))
+                                }
                             }
 
                             Repeater {
