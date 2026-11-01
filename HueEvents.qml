@@ -12,7 +12,7 @@ PluginComponent {
     id: root
 
     readonly property var defaultActions: ({
-            login: "on", lock: "off", unlock: "on", logout: "off", sleep: "off", resume: "on", shutdown: "off", reboot: "off"
+            login: "on", lock: "off", unlock: "on", monitorOff: "off", monitorOn: "on", logout: "off", sleep: "off", resume: "on", shutdown: "off", reboot: "off"
         })
 
     // shutdown marker: power off/reboot also end the graphical session, the logout hook must then stay quiet
@@ -68,6 +68,14 @@ PluginComponent {
         id: loginTimer
         interval: 3000
         onTriggered: root.run("login")
+    }
+
+    // --- Monitors off / on: DPMS driven by the shell idle settings (IdleService.requestMonitorOff/On)
+    Connections {
+        target: IdleService
+        function onMonitorsOffChanged() {
+            root.run(IdleService.monitorsOff ? "monitorOff" : "monitorOn");
+        }
     }
 
     // --- Lock / unlock

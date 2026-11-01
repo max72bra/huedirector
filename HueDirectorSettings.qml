@@ -20,6 +20,8 @@ PluginSettings {
         { key: "logout", label: I18n.trFor("hueDirector", "Logout"), def: "off" },
         { key: "lock", label: I18n.trFor("hueDirector", "Screen locked"), def: "off" },
         { key: "unlock", label: I18n.trFor("hueDirector", "Screen unlocked"), def: "on" },
+        { key: "monitorOff", label: I18n.trFor("hueDirector", "Monitors off"), def: "off" },
+        { key: "monitorOn", label: I18n.trFor("hueDirector", "Monitors on"), def: "on" },
         { key: "sleep", label: I18n.trFor("hueDirector", "Suspend or hibernate"), def: "off" },
         { key: "resume", label: I18n.trFor("hueDirector", "Resume from sleep"), def: "on" },
         // Told apart from power off only on systemd >= 256 (PrepareForShutdownWithMetadata); older systems run "Power off" for both

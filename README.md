@@ -10,7 +10,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Room cards**: one card per room with its icon, how many lights are on, an on/off switch and a brightness slider. Cards are tinted with the current color of the room's lights. A button turns off every light in the home.
 - **Room page**: click a card to open the room. Scenes are shown as tiles painted with the scene's own colors; the active scene is marked. Each light has its own switch and brightness slider.
 - **Color**: click a light to show its color controls: color temperature (in Kelvin), a rainbow hue slider, and the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
-- **Automations**: turn a light, a room or all lights on or off when you log in, lock or unlock the screen, suspend or resume, log out, power off or reboot. Set them up in the plugin settings (gear button in the popout).
+- **Automations**: turn a light, a room or all lights on or off when you log in, lock or unlock the screen, the monitors turn off or on, suspend or resume, log out, power off or reboot. Set them up in the plugin settings (gear button in the popout).
 - **Live updates**: changes made from the Hue app or switches show up right away, through the bridge event stream. If the stream fails, the plugin falls back to polling every 30 seconds.
 
 The plugin talks only to your Hue Bridge. The only internet request is bridge discovery through `discovery.meethue.com`, and only when the bridge isn't found on the local network.
@@ -78,6 +78,7 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 |---|---|
 | Login | The shell starts within 2 minutes of the session start (restarting the shell later doesn't count) |
 | Screen locked / unlocked | Dux Shell lock screen |
+| Monitors off / on | Dux Shell power saving turning the monitors off (DPMS) and back on. Monitors turned off by other tools (e.g. hypridle) are not detected |
 | Suspend or hibernate / Resume | logind sleep signal; the system waits up to 5 seconds (logind `InhibitDelayMaxSec`) for the lights |
 | Power off / Reboot | logind shutdown signal, with the same wait. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
 | Logout | A small user service bound to `graphical-session.target` runs the action when the session ends. It needs a systemd-managed session (e.g. uwsm); otherwise logout rules don't run |
@@ -91,7 +92,7 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 
 ## Translations
 
-The interface is in English and follows the Dux Shell language (Settings → Locale). Available translations: Italian (`translations/it.json`).
+The interface is in English and follows the Dux Shell language (Settings → Locale). Available translations: French, German, Italian, Japanese, Korean, Simplified Chinese and Spanish (`translations/`). They were machine-assisted: corrections from native speakers are welcome.
 
 To add a language, copy `translations/it.json` to `translations/<locale>.json` (e.g. `de.json`, `pt_BR.json`) and translate the values. Each key is the English text; placeholders like `%1` must stay in the translation. Missing terms fall back to English. Reload with `dms ipc call plugins reload hueDirector`.
 
