@@ -193,5 +193,11 @@
     },
     "Monitors on": {
         "Monitors on": "Monitore an"
+    },
+    "Show lights on count": {
+        "Show lights on count": "Anzahl eingeschalteter Lampen anzeigen"
+    },
+    "Number next to the bar icon; when off, only the icon shows the state": {
+        "Number next to the bar icon; when off, only the icon shows the state": "Zahl neben dem Leistensymbol; wenn aus, zeigt nur das Symbol den Zustand"
     }
 }

@@ -193,5 +193,11 @@
     },
     "Monitors on": {
         "Monitors on": "モニターオン"
+    },
+    "Show lights on count": {
+        "Show lights on count": "点灯中のライト数を表示"
+    },
+    "Number next to the bar icon; when off, only the icon shows the state": {
+        "Number next to the bar icon; when off, only the icon shows the state": "バーのアイコン横の数字。オフにするとアイコンだけで状態を表示します"
     }
 }

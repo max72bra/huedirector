@@ -193,5 +193,11 @@
     },
     "Monitors on": {
         "Monitors on": "显示器开启"
+    },
+    "Show lights on count": {
+        "Show lights on count": "显示已开灯数量"
+    },
+    "Number next to the bar icon; when off, only the icon shows the state": {
+        "Number next to the bar icon; when off, only the icon shows the state": "栏图标旁的数字；关闭后仅由图标显示状态"
     }
 }

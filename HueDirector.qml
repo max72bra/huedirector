@@ -31,6 +31,8 @@ PluginComponent {
     readonly property string favoriteRoomId: pluginData?.favoriteRoom ?? ""
     readonly property bool hasFavorite: rooms.some(r => r.Id === favoriteRoomId)
     readonly property int pillLightsOn: hasFavorite ? lights.filter(l => l.Parent?.Parent?.Id === favoriteRoomId && l.HueData?.on?.on).length : lightsOn
+    // Settings: number next to the pill icon (default on); off leaves only the icon and its color
+    readonly property bool showLightCount: pluginData?.showLightCount ?? true
     readonly property string pillIcon: !paired ? "link_off" : error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
     readonly property color pillColor: paired && error ? Theme.error : (paired && pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
@@ -318,7 +320,7 @@ PluginComponent {
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.pillLightsOn > 0
+                visible: root.showLightCount && root.pillLightsOn > 0
                 text: root.pillLightsOn
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall
@@ -339,7 +341,7 @@ PluginComponent {
 
             StyledText {
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible: root.pillLightsOn > 0
+                visible: root.showLightCount && root.pillLightsOn > 0
                 text: root.pillLightsOn
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall

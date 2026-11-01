@@ -193,5 +193,11 @@
     },
     "Monitors on": {
         "Monitors on": "Écrans allumés"
+    },
+    "Show lights on count": {
+        "Show lights on count": "Afficher le nombre de lumières allumées"
+    },
+    "Number next to the bar icon; when off, only the icon shows the state": {
+        "Number next to the bar icon; when off, only the icon shows the state": "Nombre à côté de l'icône de la barre ; désactivé, seule l'icône indique l'état"
     }
 }

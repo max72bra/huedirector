@@ -70,6 +70,13 @@ PluginSettings {
         defaultValue: "all"
     }
 
+    ToggleSetting {
+        settingKey: "showLightCount"
+        label: I18n.trFor("hueDirector", "Show lights on count")
+        description: I18n.trFor("hueDirector", "Number next to the bar icon; when off, only the icon shows the state")
+        defaultValue: true
+    }
+
     SelectionSetting {
         settingKey: "favoriteLight"
         label: I18n.trFor("hueDirector", "Favorite light")

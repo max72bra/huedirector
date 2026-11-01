@@ -87,6 +87,7 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 
 - **Hue Bridge**: shows the paired bridge and lets you pair again.
 - **Favorite room**: room shown in the bar pill (icon and number of lights on). Default: all rooms.
+- **Show lights on count**: number next to the bar icon. Turn it off to keep only the icon, which still changes with the lights' state. Default: on.
 - **Favorite light**: a light, a room or all lights. Right-click the bar icon to turn it on or off.
 - **System events**: the automations described above.
 
