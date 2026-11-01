@@ -1,0 +1,197 @@
+{
+    "Hue Bridge not reachable": {
+        "Hue Bridge not reachable": "Hue Bridge nicht erreichbar"
+    },
+    "Request failed (curl exit %1)": {
+        "Request failed (curl exit %1)": "Anfrage fehlgeschlagen (curl exit %1)"
+    },
+    "Bridge error (HTTP %1)": {
+        "Bridge error (HTTP %1)": "Bridge-Fehler (HTTP %1)"
+    },
+    "The bridge identity changed: pair again": {
+        "The bridge identity changed: pair again": "Die Identität der Bridge hat sich geändert: erneut koppeln"
+    },
+    "%1 of %2 lights on": {
+        "%1 of %2 lights on": "%1 von %2 Lampen an"
+    },
+    "Loading…": {
+        "Loading…": "Wird geladen…"
+    },
+    "Settings and automations": {
+        "Settings and automations": "Einstellungen und Automationen"
+    },
+    "Turn off all lights": {
+        "Turn off all lights": "Alle Lampen ausschalten"
+    },
+    "%1 of %2 on · %3%": {
+        "%1 of %2 on · %3%": "%1 von %2 an · %3%"
+    },
+    "Off": {
+        "Off": "Aus"
+    },
+    "All rooms": {
+        "All rooms": "Alle Räume"
+    },
+    "Scenes": {
+        "Scenes": "Szenen"
+    },
+    "Lights": {
+        "Lights": "Lampen"
+    },
+    "Login": {
+        "Login": "Anmeldung"
+    },
+    "Logout": {
+        "Logout": "Abmeldung"
+    },
+    "Screen locked": {
+        "Screen locked": "Bildschirm gesperrt"
+    },
+    "Screen unlocked": {
+        "Screen unlocked": "Bildschirm entsperrt"
+    },
+    "Suspend or hibernate": {
+        "Suspend or hibernate": "Bereitschaft oder Ruhezustand"
+    },
+    "Resume from sleep": {
+        "Resume from sleep": "Aufwachen aus dem Ruhezustand"
+    },
+    "Reboot": {
+        "Reboot": "Neustart"
+    },
+    "Power off": {
+        "Power off": "Ausschalten"
+    },
+    "Room · %1": {
+        "Room · %1": "Raum · %1"
+    },
+    "Light · %1": {
+        "Light · %1": "Lampe · %1"
+    },
+    "All lights": {
+        "All lights": "Alle Lampen"
+    },
+    "Hue Bridge": {
+        "Hue Bridge": "Hue Bridge"
+    },
+    "Favorite room": {
+        "Favorite room": "Lieblingsraum"
+    },
+    "Room shown in the bar pill (icon and lights on count)": {
+        "Room shown in the bar pill (icon and lights on count)": "In der Leiste angezeigter Raum (Symbol und Anzahl eingeschalteter Lampen)"
+    },
+    "System events": {
+        "System events": "Systemereignisse"
+    },
+    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Schalte eine Lampe, einen Raum oder alle Lampen ein oder aus, wenn in deiner Sitzung etwas passiert. Abmelderegeln benötigen eine von systemd verwaltete Sitzung (z. B. uwsm). Vor Bereitschaft und Ausschalten wartet das System einige Sekunden, bis die Lampen gesetzt sind."
+    },
+    "Nothing": {
+        "Nothing": "Nichts"
+    },
+    "Action": {
+        "Action": "Aktion"
+    },
+    "Turn off": {
+        "Turn off": "Ausschalten"
+    },
+    "Turn on": {
+        "Turn on": "Einschalten"
+    },
+    "Hide color controls": {
+        "Hide color controls": "Farbeinstellungen ausblenden"
+    },
+    "Color and temperature": {
+        "Color and temperature": "Farbe und Farbtemperatur"
+    },
+    "More colors…": {
+        "More colors…": "Weitere Farben…"
+    },
+    "Looking for the Hue Bridge…": {
+        "Looking for the Hue Bridge…": "Hue Bridge wird gesucht…"
+    },
+    "Connecting to the bridge at %1…": {
+        "Connecting to the bridge at %1…": "Verbindung zur Bridge %1…"
+    },
+    "Hue Bridge not found: enter its IP address": {
+        "Hue Bridge not found: enter its IP address": "Hue Bridge nicht gefunden: IP-Adresse eingeben"
+    },
+    "Hue Bridge not reachable at this address": {
+        "Hue Bridge not reachable at this address": "Hue Bridge unter dieser Adresse nicht erreichbar"
+    },
+    "No Hue Bridge at this address": {
+        "No Hue Bridge at this address": "Keine Hue Bridge unter dieser Adresse"
+    },
+    "Pairing failed": {
+        "Pairing failed": "Kopplung fehlgeschlagen"
+    },
+    "Paired with the Hue Bridge": {
+        "Paired with the Hue Bridge": "Mit der Hue Bridge gekoppelt"
+    },
+    "Pairing cancelled": {
+        "Pairing cancelled": "Kopplung abgebrochen"
+    },
+    "The bridge button was not pressed within %1 seconds": {
+        "The bridge button was not pressed within %1 seconds": "Die Taste der Bridge wurde nicht innerhalb von %1 Sekunden gedrückt"
+    },
+    "Pairing failed (exit %1)": {
+        "Pairing failed (exit %1)": "Kopplung fehlgeschlagen (exit %1)"
+    },
+    "Paired with the bridge at %1": {
+        "Paired with the bridge at %1": "Gekoppelt mit der Bridge %1"
+    },
+    "Not paired with a Hue Bridge": {
+        "Not paired with a Hue Bridge": "Nicht mit einer Hue Bridge gekoppelt"
+    },
+    "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": {
+        "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": "Erneut koppeln, nachdem die Bridge zurückgesetzt oder ersetzt wurde oder wenn sich ihre IP-Adresse geändert hat. Der gespeicherte Schlüssel wird nur ersetzt, wenn die Kopplung gelingt."
+    },
+    "Click Pair, then press the round button on top of your Hue Bridge.": {
+        "Click Pair, then press the round button on top of your Hue Bridge.": "Klicke auf Koppeln und drücke dann die runde Taste oben auf der Hue Bridge."
+    },
+    "Bridge IP address (optional)": {
+        "Bridge IP address (optional)": "IP-Adresse der Bridge (optional)"
+    },
+    "Auto-discover": {
+        "Auto-discover": "Automatisch suchen"
+    },
+    "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": {
+        "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": "Leer lassen, um die Bridge automatisch zu finden. Die IP steht in der Hue-App unter Einstellungen → Bridges."
+    },
+    "Enter an IPv4 address, e.g. 192.168.1.20": {
+        "Enter an IPv4 address, e.g. 192.168.1.20": "Gib eine IPv4-Adresse ein, z. B. 192.168.1.20"
+    },
+    "Pair again": {
+        "Pair again": "Erneut koppeln"
+    },
+    "Pair": {
+        "Pair": "Koppeln"
+    },
+    "Cancel": {
+        "Cancel": "Abbrechen"
+    },
+    "Press the button on your Hue Bridge now (%1 s left)": {
+        "Press the button on your Hue Bridge now (%1 s left)": "Drücke jetzt die Taste der Hue Bridge (noch %1 s)"
+    },
+    "Missing: %1": {
+        "Missing: %1": "Fehlt: %1"
+    },
+    "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": {
+        "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": "Hue Director kommuniziert per curl mit der Hue Bridge und prüft ihr Zertifikat mit openssl.\n\nInstalliere die fehlenden Pakete mit deiner Paketverwaltung und aktiviere dieses Plugin dann erneut."
+    },
+    "Event and target": {
+        "Event and target": "Ereignis und Ziel"
+    },
+    "Favorite light": {
+        "Favorite light": "Lieblingslampe"
+    },
+    "Right-click the bar icon to turn it on or off": {
+        "Right-click the bar icon to turn it on or off": "Rechtsklick auf das Leistensymbol schaltet sie ein oder aus"
+    },
+    "Monitors off": {
+        "Monitors off": "Monitore aus"
+    },
+    "Monitors on": {
+        "Monitors on": "Monitore an"
+    }
+}

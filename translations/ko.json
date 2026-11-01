@@ -1,0 +1,197 @@
+{
+    "Hue Bridge not reachable": {
+        "Hue Bridge not reachable": "Hue Bridge에 연결할 수 없습니다"
+    },
+    "Request failed (curl exit %1)": {
+        "Request failed (curl exit %1)": "요청 실패 (curl exit %1)"
+    },
+    "Bridge error (HTTP %1)": {
+        "Bridge error (HTTP %1)": "Bridge 오류 (HTTP %1)"
+    },
+    "The bridge identity changed: pair again": {
+        "The bridge identity changed: pair again": "Bridge의 식별 정보가 변경되었습니다. 다시 페어링하세요"
+    },
+    "%1 of %2 lights on": {
+        "%1 of %2 lights on": "조명 %2개 중 %1개 켜짐"
+    },
+    "Loading…": {
+        "Loading…": "불러오는 중…"
+    },
+    "Settings and automations": {
+        "Settings and automations": "설정 및 자동화"
+    },
+    "Turn off all lights": {
+        "Turn off all lights": "모든 조명 끄기"
+    },
+    "%1 of %2 on · %3%": {
+        "%1 of %2 on · %3%": "%2개 중 %1개 켜짐 · %3%"
+    },
+    "Off": {
+        "Off": "꺼짐"
+    },
+    "All rooms": {
+        "All rooms": "모든 방"
+    },
+    "Scenes": {
+        "Scenes": "장면"
+    },
+    "Lights": {
+        "Lights": "조명"
+    },
+    "Login": {
+        "Login": "로그인"
+    },
+    "Logout": {
+        "Logout": "로그아웃"
+    },
+    "Screen locked": {
+        "Screen locked": "화면 잠금"
+    },
+    "Screen unlocked": {
+        "Screen unlocked": "화면 잠금 해제"
+    },
+    "Suspend or hibernate": {
+        "Suspend or hibernate": "절전 또는 최대 절전"
+    },
+    "Resume from sleep": {
+        "Resume from sleep": "절전 모드에서 깨어남"
+    },
+    "Reboot": {
+        "Reboot": "다시 시작"
+    },
+    "Power off": {
+        "Power off": "전원 끄기"
+    },
+    "Room · %1": {
+        "Room · %1": "방 · %1"
+    },
+    "Light · %1": {
+        "Light · %1": "조명 · %1"
+    },
+    "All lights": {
+        "All lights": "모든 조명"
+    },
+    "Hue Bridge": {
+        "Hue Bridge": "Hue Bridge"
+    },
+    "Favorite room": {
+        "Favorite room": "즐겨찾는 방"
+    },
+    "Room shown in the bar pill (icon and lights on count)": {
+        "Room shown in the bar pill (icon and lights on count)": "바에 표시할 방 (아이콘 및 켜진 조명 수)"
+    },
+    "System events": {
+        "System events": "시스템 이벤트"
+    },
+    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "세션에서 특정 이벤트가 발생하면 조명, 방 또는 모든 조명을 켜거나 끕니다. 로그아웃 규칙에는 systemd가 관리하는 세션(예: uwsm)이 필요합니다. 절전 및 전원 끄기 전에 시스템은 조명이 설정될 때까지 몇 초 동안 기다립니다."
+    },
+    "Nothing": {
+        "Nothing": "없음"
+    },
+    "Action": {
+        "Action": "동작"
+    },
+    "Turn off": {
+        "Turn off": "끄기"
+    },
+    "Turn on": {
+        "Turn on": "켜기"
+    },
+    "Hide color controls": {
+        "Hide color controls": "색상 설정 숨기기"
+    },
+    "Color and temperature": {
+        "Color and temperature": "색상 및 색온도"
+    },
+    "More colors…": {
+        "More colors…": "더 많은 색상…"
+    },
+    "Looking for the Hue Bridge…": {
+        "Looking for the Hue Bridge…": "Hue Bridge 찾는 중…"
+    },
+    "Connecting to the bridge at %1…": {
+        "Connecting to the bridge at %1…": "Bridge %1에 연결하는 중…"
+    },
+    "Hue Bridge not found: enter its IP address": {
+        "Hue Bridge not found: enter its IP address": "Hue Bridge를 찾을 수 없습니다. IP 주소를 입력하세요"
+    },
+    "Hue Bridge not reachable at this address": {
+        "Hue Bridge not reachable at this address": "이 주소의 Hue Bridge에 연결할 수 없습니다"
+    },
+    "No Hue Bridge at this address": {
+        "No Hue Bridge at this address": "이 주소에 Hue Bridge가 없습니다"
+    },
+    "Pairing failed": {
+        "Pairing failed": "페어링 실패"
+    },
+    "Paired with the Hue Bridge": {
+        "Paired with the Hue Bridge": "Hue Bridge와 페어링됨"
+    },
+    "Pairing cancelled": {
+        "Pairing cancelled": "페어링 취소됨"
+    },
+    "The bridge button was not pressed within %1 seconds": {
+        "The bridge button was not pressed within %1 seconds": "%1초 안에 Bridge 버튼을 누르지 않았습니다"
+    },
+    "Pairing failed (exit %1)": {
+        "Pairing failed (exit %1)": "페어링 실패 (exit %1)"
+    },
+    "Paired with the bridge at %1": {
+        "Paired with the bridge at %1": "Bridge %1과(와) 페어링됨"
+    },
+    "Not paired with a Hue Bridge": {
+        "Not paired with a Hue Bridge": "Hue Bridge와 페어링되지 않음"
+    },
+    "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": {
+        "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": "Bridge를 초기화하거나 교체한 경우, 또는 IP 주소가 바뀐 경우 다시 페어링하세요. 저장된 키는 페어링에 성공한 경우에만 교체됩니다."
+    },
+    "Click Pair, then press the round button on top of your Hue Bridge.": {
+        "Click Pair, then press the round button on top of your Hue Bridge.": "페어링을 클릭한 다음 Hue Bridge 위쪽의 둥근 버튼을 누르세요."
+    },
+    "Bridge IP address (optional)": {
+        "Bridge IP address (optional)": "Bridge IP 주소 (선택 사항)"
+    },
+    "Auto-discover": {
+        "Auto-discover": "자동 검색"
+    },
+    "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": {
+        "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": "비워 두면 Bridge를 자동으로 찾습니다. IP는 Hue 앱의 설정 → Bridge에서 확인할 수 있습니다."
+    },
+    "Enter an IPv4 address, e.g. 192.168.1.20": {
+        "Enter an IPv4 address, e.g. 192.168.1.20": "IPv4 주소를 입력하세요 (예: 192.168.1.20)"
+    },
+    "Pair again": {
+        "Pair again": "다시 페어링"
+    },
+    "Pair": {
+        "Pair": "페어링"
+    },
+    "Cancel": {
+        "Cancel": "취소"
+    },
+    "Press the button on your Hue Bridge now (%1 s left)": {
+        "Press the button on your Hue Bridge now (%1 s left)": "지금 Hue Bridge의 버튼을 누르세요 (%1초 남음)"
+    },
+    "Missing: %1": {
+        "Missing: %1": "누락됨: %1"
+    },
+    "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": {
+        "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": "Hue Director는 curl로 Hue Bridge와 통신하고 openssl로 인증서를 확인합니다.\n\n패키지 관리자로 누락된 패키지를 설치한 다음 이 플러그인을 다시 활성화하세요."
+    },
+    "Event and target": {
+        "Event and target": "이벤트 및 대상"
+    },
+    "Favorite light": {
+        "Favorite light": "즐겨찾는 조명"
+    },
+    "Right-click the bar icon to turn it on or off": {
+        "Right-click the bar icon to turn it on or off": "바의 아이콘을 마우스 오른쪽 버튼으로 클릭하면 켜거나 끕니다"
+    },
+    "Monitors off": {
+        "Monitors off": "모니터 꺼짐"
+    },
+    "Monitors on": {
+        "Monitors on": "모니터 켜짐"
+    }
+}

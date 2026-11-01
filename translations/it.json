@@ -187,5 +187,11 @@
     },
     "Right-click the bar icon to turn it on or off": {
         "Right-click the bar icon to turn it on or off": "Clic destro sull'icona nella barra per accenderla o spegnerla"
+    },
+    "Monitors off": {
+        "Monitors off": "Monitor spenti"
+    },
+    "Monitors on": {
+        "Monitors on": "Monitor accesi"
     }
 }

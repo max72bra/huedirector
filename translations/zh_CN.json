@@ -1,0 +1,197 @@
+{
+    "Hue Bridge not reachable": {
+        "Hue Bridge not reachable": "无法连接 Hue Bridge"
+    },
+    "Request failed (curl exit %1)": {
+        "Request failed (curl exit %1)": "请求失败（curl exit %1）"
+    },
+    "Bridge error (HTTP %1)": {
+        "Bridge error (HTTP %1)": "Bridge 错误（HTTP %1）"
+    },
+    "The bridge identity changed: pair again": {
+        "The bridge identity changed: pair again": "Bridge 身份已更改：请重新配对"
+    },
+    "%1 of %2 lights on": {
+        "%1 of %2 lights on": "%2 盏灯中 %1 盏已开"
+    },
+    "Loading…": {
+        "Loading…": "正在加载…"
+    },
+    "Settings and automations": {
+        "Settings and automations": "设置与自动化"
+    },
+    "Turn off all lights": {
+        "Turn off all lights": "关闭所有灯"
+    },
+    "%1 of %2 on · %3%": {
+        "%1 of %2 on · %3%": "%2 盏中 %1 盏已开 · %3%"
+    },
+    "Off": {
+        "Off": "已关闭"
+    },
+    "All rooms": {
+        "All rooms": "所有房间"
+    },
+    "Scenes": {
+        "Scenes": "场景"
+    },
+    "Lights": {
+        "Lights": "灯"
+    },
+    "Login": {
+        "Login": "登录"
+    },
+    "Logout": {
+        "Logout": "注销"
+    },
+    "Screen locked": {
+        "Screen locked": "屏幕已锁定"
+    },
+    "Screen unlocked": {
+        "Screen unlocked": "屏幕已解锁"
+    },
+    "Suspend or hibernate": {
+        "Suspend or hibernate": "睡眠或休眠"
+    },
+    "Resume from sleep": {
+        "Resume from sleep": "从睡眠中唤醒"
+    },
+    "Reboot": {
+        "Reboot": "重启"
+    },
+    "Power off": {
+        "Power off": "关机"
+    },
+    "Room · %1": {
+        "Room · %1": "房间 · %1"
+    },
+    "Light · %1": {
+        "Light · %1": "灯 · %1"
+    },
+    "All lights": {
+        "All lights": "所有灯"
+    },
+    "Hue Bridge": {
+        "Hue Bridge": "Hue Bridge"
+    },
+    "Favorite room": {
+        "Favorite room": "常用房间"
+    },
+    "Room shown in the bar pill (icon and lights on count)": {
+        "Room shown in the bar pill (icon and lights on count)": "在栏中显示的房间（图标和已开灯数量）"
+    },
+    "System events": {
+        "System events": "系统事件"
+    },
+    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "当会话中发生某些事件时，打开或关闭一盏灯、一个房间或所有灯。注销规则需要由 systemd 管理的会话（例如 uwsm）。在睡眠和关机前，系统会等待几秒钟以完成灯光设置。"
+    },
+    "Nothing": {
+        "Nothing": "无"
+    },
+    "Action": {
+        "Action": "操作"
+    },
+    "Turn off": {
+        "Turn off": "关闭"
+    },
+    "Turn on": {
+        "Turn on": "打开"
+    },
+    "Hide color controls": {
+        "Hide color controls": "隐藏颜色控制"
+    },
+    "Color and temperature": {
+        "Color and temperature": "颜色和色温"
+    },
+    "More colors…": {
+        "More colors…": "更多颜色…"
+    },
+    "Looking for the Hue Bridge…": {
+        "Looking for the Hue Bridge…": "正在查找 Hue Bridge…"
+    },
+    "Connecting to the bridge at %1…": {
+        "Connecting to the bridge at %1…": "正在连接 Bridge %1…"
+    },
+    "Hue Bridge not found: enter its IP address": {
+        "Hue Bridge not found: enter its IP address": "未找到 Hue Bridge：请输入其 IP 地址"
+    },
+    "Hue Bridge not reachable at this address": {
+        "Hue Bridge not reachable at this address": "无法通过此地址连接 Hue Bridge"
+    },
+    "No Hue Bridge at this address": {
+        "No Hue Bridge at this address": "此地址没有 Hue Bridge"
+    },
+    "Pairing failed": {
+        "Pairing failed": "配对失败"
+    },
+    "Paired with the Hue Bridge": {
+        "Paired with the Hue Bridge": "已与 Hue Bridge 配对"
+    },
+    "Pairing cancelled": {
+        "Pairing cancelled": "已取消配对"
+    },
+    "The bridge button was not pressed within %1 seconds": {
+        "The bridge button was not pressed within %1 seconds": "未在 %1 秒内按下 Bridge 按钮"
+    },
+    "Pairing failed (exit %1)": {
+        "Pairing failed (exit %1)": "配对失败（exit %1）"
+    },
+    "Paired with the bridge at %1": {
+        "Paired with the bridge at %1": "已与 Bridge %1 配对"
+    },
+    "Not paired with a Hue Bridge": {
+        "Not paired with a Hue Bridge": "未与 Hue Bridge 配对"
+    },
+    "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": {
+        "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": "在重置或更换 Bridge 后，或其 IP 地址更改时，请重新配对。只有配对成功时才会替换已保存的密钥。"
+    },
+    "Click Pair, then press the round button on top of your Hue Bridge.": {
+        "Click Pair, then press the round button on top of your Hue Bridge.": "点击“配对”，然后按下 Hue Bridge 顶部的圆形按钮。"
+    },
+    "Bridge IP address (optional)": {
+        "Bridge IP address (optional)": "Bridge IP 地址（可选）"
+    },
+    "Auto-discover": {
+        "Auto-discover": "自动发现"
+    },
+    "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": {
+        "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": "留空以自动查找 Bridge。IP 地址可在 Hue 应用的“设置 → Bridge”中查看。"
+    },
+    "Enter an IPv4 address, e.g. 192.168.1.20": {
+        "Enter an IPv4 address, e.g. 192.168.1.20": "请输入 IPv4 地址，例如 192.168.1.20"
+    },
+    "Pair again": {
+        "Pair again": "重新配对"
+    },
+    "Pair": {
+        "Pair": "配对"
+    },
+    "Cancel": {
+        "Cancel": "取消"
+    },
+    "Press the button on your Hue Bridge now (%1 s left)": {
+        "Press the button on your Hue Bridge now (%1 s left)": "请立即按下 Hue Bridge 上的按钮（剩余 %1 秒）"
+    },
+    "Missing: %1": {
+        "Missing: %1": "缺少：%1"
+    },
+    "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": {
+        "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": "Hue Director 通过 curl 与 Hue Bridge 通信，并使用 openssl 验证其证书。\n\n请使用包管理器安装缺少的软件包，然后重新启用此插件。"
+    },
+    "Event and target": {
+        "Event and target": "事件和目标"
+    },
+    "Favorite light": {
+        "Favorite light": "常用灯"
+    },
+    "Right-click the bar icon to turn it on or off": {
+        "Right-click the bar icon to turn it on or off": "右键单击栏中的图标即可打开或关闭"
+    },
+    "Monitors off": {
+        "Monitors off": "显示器关闭"
+    },
+    "Monitors on": {
+        "Monitors on": "显示器开启"
+    }
+}

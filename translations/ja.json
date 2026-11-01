@@ -1,0 +1,197 @@
+{
+    "Hue Bridge not reachable": {
+        "Hue Bridge not reachable": "Hue Bridge に接続できません"
+    },
+    "Request failed (curl exit %1)": {
+        "Request failed (curl exit %1)": "リクエストに失敗しました（curl exit %1）"
+    },
+    "Bridge error (HTTP %1)": {
+        "Bridge error (HTTP %1)": "Bridge エラー（HTTP %1）"
+    },
+    "The bridge identity changed: pair again": {
+        "The bridge identity changed: pair again": "Bridge の識別情報が変わりました。もう一度ペアリングしてください"
+    },
+    "%1 of %2 lights on": {
+        "%1 of %2 lights on": "%2 個中 %1 個のライトが点灯中"
+    },
+    "Loading…": {
+        "Loading…": "読み込み中…"
+    },
+    "Settings and automations": {
+        "Settings and automations": "設定と自動化"
+    },
+    "Turn off all lights": {
+        "Turn off all lights": "すべてのライトを消灯"
+    },
+    "%1 of %2 on · %3%": {
+        "%1 of %2 on · %3%": "%2 個中 %1 個点灯 · %3%"
+    },
+    "Off": {
+        "Off": "消灯"
+    },
+    "All rooms": {
+        "All rooms": "すべての部屋"
+    },
+    "Scenes": {
+        "Scenes": "シーン"
+    },
+    "Lights": {
+        "Lights": "ライト"
+    },
+    "Login": {
+        "Login": "ログイン"
+    },
+    "Logout": {
+        "Logout": "ログアウト"
+    },
+    "Screen locked": {
+        "Screen locked": "画面ロック"
+    },
+    "Screen unlocked": {
+        "Screen unlocked": "画面ロック解除"
+    },
+    "Suspend or hibernate": {
+        "Suspend or hibernate": "スリープまたは休止状態"
+    },
+    "Resume from sleep": {
+        "Resume from sleep": "スリープからの復帰"
+    },
+    "Reboot": {
+        "Reboot": "再起動"
+    },
+    "Power off": {
+        "Power off": "電源オフ"
+    },
+    "Room · %1": {
+        "Room · %1": "部屋 · %1"
+    },
+    "Light · %1": {
+        "Light · %1": "ライト · %1"
+    },
+    "All lights": {
+        "All lights": "すべてのライト"
+    },
+    "Hue Bridge": {
+        "Hue Bridge": "Hue Bridge"
+    },
+    "Favorite room": {
+        "Favorite room": "お気に入りの部屋"
+    },
+    "Room shown in the bar pill (icon and lights on count)": {
+        "Room shown in the bar pill (icon and lights on count)": "バーに表示する部屋（アイコンと点灯中のライト数）"
+    },
+    "System events": {
+        "System events": "システムイベント"
+    },
+    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "セッションで何かが起きたときに、ライト・部屋・すべてのライトを点灯または消灯します。ログアウトのルールには systemd が管理するセッション（uwsm など）が必要です。スリープや電源オフの前に、システムはライトの設定のため数秒待機します。"
+    },
+    "Nothing": {
+        "Nothing": "なし"
+    },
+    "Action": {
+        "Action": "操作"
+    },
+    "Turn off": {
+        "Turn off": "消灯"
+    },
+    "Turn on": {
+        "Turn on": "点灯"
+    },
+    "Hide color controls": {
+        "Hide color controls": "カラー設定を隠す"
+    },
+    "Color and temperature": {
+        "Color and temperature": "カラーと色温度"
+    },
+    "More colors…": {
+        "More colors…": "その他の色…"
+    },
+    "Looking for the Hue Bridge…": {
+        "Looking for the Hue Bridge…": "Hue Bridge を検索中…"
+    },
+    "Connecting to the bridge at %1…": {
+        "Connecting to the bridge at %1…": "Bridge %1 に接続中…"
+    },
+    "Hue Bridge not found: enter its IP address": {
+        "Hue Bridge not found: enter its IP address": "Hue Bridge が見つかりません。IP アドレスを入力してください"
+    },
+    "Hue Bridge not reachable at this address": {
+        "Hue Bridge not reachable at this address": "このアドレスの Hue Bridge に接続できません"
+    },
+    "No Hue Bridge at this address": {
+        "No Hue Bridge at this address": "このアドレスに Hue Bridge はありません"
+    },
+    "Pairing failed": {
+        "Pairing failed": "ペアリングに失敗しました"
+    },
+    "Paired with the Hue Bridge": {
+        "Paired with the Hue Bridge": "Hue Bridge とペアリングしました"
+    },
+    "Pairing cancelled": {
+        "Pairing cancelled": "ペアリングをキャンセルしました"
+    },
+    "The bridge button was not pressed within %1 seconds": {
+        "The bridge button was not pressed within %1 seconds": "%1 秒以内に Bridge のボタンが押されませんでした"
+    },
+    "Pairing failed (exit %1)": {
+        "Pairing failed (exit %1)": "ペアリングに失敗しました（exit %1）"
+    },
+    "Paired with the bridge at %1": {
+        "Paired with the bridge at %1": "Bridge %1 とペアリング済み"
+    },
+    "Not paired with a Hue Bridge": {
+        "Not paired with a Hue Bridge": "Hue Bridge とペアリングされていません"
+    },
+    "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": {
+        "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": "Bridge をリセットまたは交換した場合、または IP アドレスが変わった場合は、もう一度ペアリングしてください。保存されたキーはペアリングに成功した場合のみ置き換えられます。"
+    },
+    "Click Pair, then press the round button on top of your Hue Bridge.": {
+        "Click Pair, then press the round button on top of your Hue Bridge.": "「ペアリング」をクリックしてから、Hue Bridge 上部の丸いボタンを押してください。"
+    },
+    "Bridge IP address (optional)": {
+        "Bridge IP address (optional)": "Bridge の IP アドレス（任意）"
+    },
+    "Auto-discover": {
+        "Auto-discover": "自動検出"
+    },
+    "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": {
+        "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": "空欄のままにすると Bridge を自動で検索します。IP は Hue アプリの「設定 → Bridge」で確認できます。"
+    },
+    "Enter an IPv4 address, e.g. 192.168.1.20": {
+        "Enter an IPv4 address, e.g. 192.168.1.20": "IPv4 アドレスを入力してください（例: 192.168.1.20）"
+    },
+    "Pair again": {
+        "Pair again": "もう一度ペアリング"
+    },
+    "Pair": {
+        "Pair": "ペアリング"
+    },
+    "Cancel": {
+        "Cancel": "キャンセル"
+    },
+    "Press the button on your Hue Bridge now (%1 s left)": {
+        "Press the button on your Hue Bridge now (%1 s left)": "今すぐ Hue Bridge のボタンを押してください（残り %1 秒）"
+    },
+    "Missing: %1": {
+        "Missing: %1": "不足: %1"
+    },
+    "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": {
+        "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": "Hue Director は curl で Hue Bridge と通信し、openssl で証明書を検証します。\n\nパッケージマネージャーで不足しているパッケージをインストールしてから、このプラグインを再度有効にしてください。"
+    },
+    "Event and target": {
+        "Event and target": "イベントと対象"
+    },
+    "Favorite light": {
+        "Favorite light": "お気に入りのライト"
+    },
+    "Right-click the bar icon to turn it on or off": {
+        "Right-click the bar icon to turn it on or off": "バーのアイコンを右クリックすると点灯・消灯します"
+    },
+    "Monitors off": {
+        "Monitors off": "モニターオフ"
+    },
+    "Monitors on": {
+        "Monitors on": "モニターオン"
+    }
+}
