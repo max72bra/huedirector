@@ -9,7 +9,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Bar pill**: lightbulb icon and number of lights on, for the whole home or a favorite room. Turns red when `openhue` fails.
 - **Rooms**: turn each room on or off and set its brightness.
 - **Lights**: expand a room to control each light: on/off and brightness.
-- **Color**: for lights that support it, set the color temperature (in Kelvin) or pick one of 8 preset colors.
+- **Color**: for lights that support it, set the color temperature (in Kelvin), change the hue with a rainbow slider, or open the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
 - **Scenes**: expand a room to activate one of its scenes; the active scene is highlighted.
 - **Live updates**: changes made from the Hue app or switches show up right away, through the bridge event stream (`openhue get events`). If the stream fails, the plugin falls back to polling every 30 seconds.
 
@@ -17,8 +17,8 @@ All bridge communication goes through the `openhue` command; the plugin talks on
 
 ### Known limitations
 
-- Colors are limited to the presets; there is no free color picker yet.
-- The current color of a light is not highlighted among the presets.
+- The hue slider sets fully saturated colors; use the color picker for pastel tones.
+- Colors shown on screen are an approximation: Hue lamps can produce colors a monitor can't display.
 - The bridge event stream is an alpha feature of openhue-cli.
 
 ## Requirements

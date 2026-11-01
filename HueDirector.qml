@@ -18,9 +18,6 @@ PluginComponent {
     // False when openhue reports no config; PairingPanel replaces the room list
     property bool paired: true
 
-    // Red, orange, yellow, green, cyan, blue, purple, pink
-    readonly property var colorPresets: ["#FF0000", "#FF8000", "#FFD000", "#00FF00", "#00FFFF", "#0000FF", "#8000FF", "#FF00A0"]
-
     readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
 
     // Pill shows the favorite room only; "all" or a removed room falls back to the whole home
@@ -68,6 +65,11 @@ PluginComponent {
         if (!colors.length)
             return null;
         return [0, 1, 2].map(i => colors.reduce((sum, c) => sum + c[i], 0) / colors.length);
+    }
+
+    // "#RRGGBB" for openhue --rgb; color.toString() can emit "#AARRGGBB"
+    function hex(c) {
+        return "#" + [c.r, c.g, c.b].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
     }
 
     function rgbColor(rgb) {
@@ -358,18 +360,63 @@ PluginComponent {
                                         onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--temperature", String(Math.round(1e6 / value))])
                                     }
 
-                                    Flow {
+                                    // Swatch takes the slot of the end icon of the sliders above (DSlider SideIcon: iconSize wide, spacingM gap)
+                                    Row {
                                         width: parent.width
                                         visible: lightControl.expanded && lightItem.hasColor
-                                        spacing: Theme.spacingXS
+                                        spacing: Theme.spacingM
 
-                                        Repeater {
-                                            model: root.colorPresets
+                                        // Fully saturated hue; the picker covers pastel tones and exact colors
+                                        HeldSlider {
+                                            id: hueSlider
+                                            readonly property real currentHue: root.lightRgb(lightItem.light) ? root.rgbColor(root.lightRgb(lightItem.light)).hsvHue : -1
+                                            // Achromatic or off (currentHue < 0): keep the last known hue
+                                            property int knownHue: 0
 
-                                            DColorButton {
-                                                required property string modelData
-                                                swatchColor: modelData
-                                                onClicked: root.setResource("light", lightItem.light.Id, ["--on", "--rgb", modelData])
+                                            onCurrentHueChanged: if (currentHue >= 0) knownHue = Math.round(currentHue * 360)
+                                            Component.onCompleted: if (currentHue >= 0) knownHue = Math.round(currentHue * 360)
+
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: parent.width - pickerButton.width - parent.spacing
+                                            minimum: 0
+                                            maximum: 359
+                                            showValue: false
+                                            startIcon: "palette"
+                                            reported: knownHue
+                                            // xy <-> RGB round trips drift a few degrees
+                                            tolerance: 5
+                                            onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--rgb", root.hex(Qt.hsva(value / 360, 1, 1, 1))])
+
+                                            // Same rainbow track as the shell color picker (Modules/ColorPicker/ColorPickerContent.qml)
+                                            trackGradient: Gradient {
+                                                orientation: Gradient.Horizontal
+                                                GradientStop { position: 0; color: Qt.hsva(0, 1, 1, 1) }
+                                                GradientStop { position: 1 / 6; color: Qt.hsva(1 / 6, 1, 1, 1) }
+                                                GradientStop { position: 2 / 6; color: Qt.hsva(2 / 6, 1, 1, 1) }
+                                                GradientStop { position: 3 / 6; color: Qt.hsva(3 / 6, 1, 1, 1) }
+                                                GradientStop { position: 4 / 6; color: Qt.hsva(4 / 6, 1, 1, 1) }
+                                                GradientStop { position: 5 / 6; color: Qt.hsva(5 / 6, 1, 1, 1) }
+                                                GradientStop { position: 1; color: Qt.hsva(1, 1, 1, 1) }
+                                            }
+                                        }
+
+                                        // Opens the shell color picker (hex, color area, eyedropper, recent colors)
+                                        DColorButton {
+                                            id: pickerButton
+                                            width: Theme.iconSize
+                                            height: Theme.iconSize
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            swatchColor: lightItem.accentColor
+                                            tooltipText: I18n.trFor("hueDirector", "More colors…")
+                                            onClicked: {
+                                                const picker = PopoutService.colorPickerModal;
+                                                if (!picker)
+                                                    return;
+                                                const lightId = lightItem.light.Id;
+                                                picker.selectedColor = lightItem.accentColor;
+                                                picker.pickerTitle = lightItem.light.Name;
+                                                picker.onColorSelectedCallback = c => root.setResource("light", lightId, ["--on", "--rgb", root.hex(c)]);
+                                                picker.show();
                                             }
                                         }
                                     }
@@ -382,7 +429,6 @@ PluginComponent {
         }
     }
 
-    // Fits the 8 color presets on one row (8 × 40 + 7 × 4 = 348 px) after popout padding and light indent
     popoutWidth: 420
     popoutHeight: 480
 }
