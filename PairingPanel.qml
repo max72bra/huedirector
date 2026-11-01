@@ -20,12 +20,12 @@ Column {
     property bool succeeded: false
     property bool cancelled: false
     property int secondsLeft: 0
+    // The timeout also covers discovery and the certificate check, so the countdown counts from here
+    property double startedAt: 0
     property string lastError: ""
     // "", "success" or "failed"
     property string result: ""
     property string message: ""
-
-    signal paired
 
     width: parent.width
     spacing: Theme.spacingS
@@ -38,6 +38,7 @@ Column {
         succeeded = false;
         result = "";
         message = I18n.trFor("hueDirector", "Looking for the Hue Bridge…");
+        startedAt = Date.now();
         secondsLeft = timeoutSeconds;
         // timeout: the script polls for the button until it is pressed
         setup.command = ["timeout", String(timeoutSeconds), "sh", "-c", bridge.pairScript, "sh", bridge.stateDir, ipField.text];
@@ -53,8 +54,10 @@ Column {
             onRead: line => {
                 if (line.startsWith("IP "))
                     panel.message = I18n.trFor("hueDirector", "Connecting to the bridge at %1…").arg(line.slice(3));
-                else if (line === "WAIT")
+                else if (line === "WAIT") {
+                    countdown.triggered();
                     countdown.start();
+                }
                 else if (line === "OK")
                     panel.succeeded = true;
                 else if (line === "ERR notfound")
@@ -74,9 +77,8 @@ Column {
             if (panel.succeeded && !panel.cancelled) {
                 panel.result = "success";
                 panel.message = I18n.trFor("hueDirector", "Paired with the Hue Bridge");
-                panel.bridge.loadConfig();
+                // Every HueBridge instance (widget, settings) reloads its config on this
                 PluginService.setGlobalVar("hueDirector", "pairingRevision", PluginService.getGlobalVar("hueDirector", "pairingRevision", 0) + 1);
-                panel.paired();
                 return;
             }
             panel.result = "failed";
@@ -95,7 +97,7 @@ Column {
         id: countdown
         interval: 1000
         repeat: true
-        onTriggered: panel.secondsLeft = Math.max(0, panel.secondsLeft - 1)
+        onTriggered: panel.secondsLeft = Math.max(0, panel.timeoutSeconds - Math.round((Date.now() - panel.startedAt) / 1000))
     }
 
     StyledText {

@@ -17,6 +17,9 @@ PluginComponent {
     property bool loaded: false
     // False when there is no pairing or the bridge rejects the key; PairingPanel replaces the room list
     property bool paired: true
+    // The bridge answered with a different public key than at pairing (replaced bridge or another device)
+    property bool certChanged: false
+    readonly property bool needsPairing: !paired || certChanged
 
     readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
 
@@ -73,7 +76,29 @@ PluginComponent {
 
     HueBridge {
         id: hueBridge
-        onConfigChanged: root.refresh()
+        // New pairing: reconnect the event stream with the new key/bridge (refresh() restarts it)
+        onConfigChanged: {
+            root.eventsRestarts = 0;
+            eventsProcess.running = false;
+            root.refresh();
+        }
+    }
+
+    // Shared by fetch and put. Returns true when err was handled as an error
+    function handleError(err) {
+        if (!err)
+            return false;
+        console.warn("Hue Director:", err);
+        if (err === "unpaired") {
+            paired = false;
+            error = "";
+        } else if (err === "certchanged") {
+            certChanged = true;
+            error = I18n.trFor("hueDirector", "The bridge identity changed: pair again");
+        } else {
+            error = err;
+        }
+        return true;
     }
 
     function refresh() {
@@ -82,15 +107,8 @@ PluginComponent {
             return;
         }
         hueBridge.fetchAll((result, err) => {
-            if (err === "unpaired") {
-                paired = false;
-                error = "";
+            if (handleError(err))
                 return;
-            }
-            if (err) {
-                error = err;
-                return;
-            }
             // Bridge order is not stable (scenes move after activation): sort everything by name
             const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
             result.rooms.forEach(r => r.Scenes.sort(byName));
@@ -99,6 +117,7 @@ PluginComponent {
             error = "";
             loaded = true;
             paired = true;
+            certChanged = false;
             startEvents();
         });
     }
@@ -106,11 +125,7 @@ PluginComponent {
     // kind: "light" | "grouped_light" | "scene", body: Hue API v2 PUT body
     function setResource(kind, id, body) {
         hueBridge.put(kind, id, body, err => {
-            if (err === "unpaired")
-                paired = false;
-            else if (err)
-                error = err;
-            else
+            if (!handleError(err))
                 refresh();
         });
     }
@@ -135,18 +150,26 @@ PluginComponent {
     readonly property int maxEventsRestarts: 5
     readonly property bool eventsActive: eventsProcess.running && eventsRestarts <= maxEventsRestarts
 
+    // Called after every successful fetch: the bridge is reachable, so a stream that gave up
+    // (eventsRestarts > max, e.g. laptop away from home) gets a fresh start
     function startEvents() {
-        if (!eventsProcess.running && !eventsRestartTimer.running && eventsRestarts <= maxEventsRestarts)
-            eventsProcess.running = true;
+        if (eventsProcess.running || eventsRestartTimer.running)
+            return;
+        if (eventsRestarts > maxEventsRestarts)
+            eventsRestarts = 0;
+        eventsProcess.running = true;
     }
 
-    // Live updates from the bridge event stream (SSE): any event triggers a refresh,
+    // Resource types shown by the widget; other events (sensors, connectivity, ...) don't refresh
+    readonly property var watchedTypes: ["light", "grouped_light", "scene", "room"]
+
+    // Live updates from the bridge event stream (SSE): relevant events trigger a refresh,
     // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
     Process {
         id: eventsProcess
         command: ["curl", "-K", hueBridge.confPath, "-N", "-H", "Accept: text/event-stream", "--expand-url", "https://{{ip}}/eventstream/clip/v2"]
         onExited: (exitCode, exitStatus) => {
-            // Unpaired: wait for pairingRevision instead of retrying
+            // Unpaired: wait for a new pairing (HueBridge.configChanged) instead of retrying
             if (!root.paired)
                 return;
             if (++root.eventsRestarts > root.maxEventsRestarts) {
@@ -156,12 +179,20 @@ PluginComponent {
             eventsRestartTimer.restart();
         }
         stdout: SplitParser {
-            // SSE frames: "id: ...", "data: [...]", and ": hi" keepalives
+            // SSE frames: "id: ...", "data: [...]", and ": hi" keepalives.
+            // Any line proves the stream works, keepalives included (quiet homes send no data for long)
             onRead: line => {
-                if (!line.startsWith("data:"))
+                if (!line.trim())
                     return;
                 root.eventsRestarts = 0;
-                root.refresh();
+                if (!line.startsWith("data:"))
+                    return;
+                let relevant = true;
+                try {
+                    relevant = JSON.parse(line.slice(5)).some(ev => (ev.data ?? []).some(r => root.watchedTypes.includes(r.type)));
+                } catch (e) {}
+                if (relevant)
+                    root.refresh();
             }
         }
     }
@@ -170,19 +201,6 @@ PluginComponent {
         id: eventsRestartTimer
         interval: 5000
         onTriggered: eventsProcess.running = true
-    }
-
-    // Bumped by PairingPanel (popout or settings) after a successful pairing
-    Connections {
-        target: PluginService
-        function onGlobalVarChanged(pluginId, varName) {
-            if (pluginId !== "hueDirector" || varName !== "pairingRevision")
-                return;
-            root.eventsRestarts = 0;
-            // Reconnect with the new key/bridge; loadConfig() triggers refresh(), which restarts events
-            eventsProcess.running = false;
-            hueBridge.loadConfig();
-        }
     }
 
     // Safety net while events are active, main source when they are not
@@ -241,14 +259,14 @@ PluginComponent {
             headerText: "Hue Director"
             detailsText: !root.paired ? "" : root.error || (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…"))
 
-            // PairingPanel already says "Not paired", so detailsText stays empty
+            // PairingPanel already says "Not paired", so detailsText stays empty (certChanged shows the error)
             PairingPanel {
                 bridge: hueBridge
-                visible: !root.paired
+                visible: root.needsPairing
             }
 
             DFlickable {
-                visible: root.paired
+                visible: !root.needsPairing
                 width: parent.width
                 height: root.popoutHeight - popout.headerHeight - popout.detailsHeight - Theme.spacingL * 2
                 contentWidth: width
@@ -272,7 +290,7 @@ PluginComponent {
                             readonly property var scenes: room?.Scenes ?? []
                             // status.active is "inactive", "static" or "dynamic_palette"
                             readonly property string activeSceneId: scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive")?.Id ?? ""
-                            // Clicked scene held until the bridge reports it active, like ControlRow.pendingBrightness
+                            // Clicked scene held until the bridge reports it active, like HeldSlider.pending
                             property string pendingSceneId: ""
 
                             onActiveSceneIdChanged: if (activeSceneId === pendingSceneId) pendingSceneId = ""
@@ -355,7 +373,15 @@ PluginComponent {
                                         unit: "K"
                                         startIcon: "wb_incandescent"
                                         endIcon: "wb_sunny"
-                                        reported: Math.round(1e6 / (lightItem.colorTemp?.mirek || 370))
+                                        // In color mode (mirek_valid false) keep the last known temperature;
+                                        // before any, the middle of the light's range
+                                        readonly property int currentMirek: lightItem.colorTemp?.mirek_valid ? (lightItem.colorTemp.mirek ?? 0) : 0
+                                        property int knownMirek: 0
+
+                                        onCurrentMirekChanged: if (currentMirek > 0) knownMirek = currentMirek
+                                        Component.onCompleted: if (currentMirek > 0) knownMirek = currentMirek
+
+                                        reported: knownMirek > 0 ? Math.round(1e6 / knownMirek) : Math.round((minimum + maximum) / 2)
                                         // Kelvin -> mirek -> Kelvin rounding drifts up to ~50K at the cold end
                                         tolerance: 100
                                         fillColor: lightControl.visibleAccent
@@ -372,7 +398,8 @@ PluginComponent {
                                         // Fully saturated hue; the picker covers pastel tones and exact colors
                                         HeldSlider {
                                             id: hueSlider
-                                            readonly property real currentHue: root.lightRgb(lightItem.light) ? root.rgbColor(root.lightRgb(lightItem.light)).hsvHue : -1
+                                            readonly property var currentRgb: root.lightRgb(lightItem.light)
+                                            readonly property real currentHue: currentRgb ? root.rgbColor(currentRgb).hsvHue : -1
                                             // Achromatic or off (currentHue < 0): keep the last known hue
                                             property int knownHue: 0
 

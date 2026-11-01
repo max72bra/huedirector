@@ -1,6 +1,6 @@
 import QtQuick
-import Quickshell.Io
 import qs.Common
+import qs.Services
 
 // Hue API v2 client. QML XMLHttpRequest can't trust the bridge certificate (private Signify CA),
 // so requests run through curl with the bridge public key pinned at pairing: no CA file needed,
@@ -22,7 +22,19 @@ Item {
     readonly property string procPrefix: "hueDirector." + Math.random().toString(36).slice(2) + "."
     property string ip: ""
 
+    // Bodies waiting for the Proc debounce, per resource id (see put())
+    property var pendingBodies: ({})
+
     signal configChanged
+
+    // Bumped by PairingPanel after a successful pairing: every instance (widget, settings) reloads
+    Connections {
+        target: PluginService
+        function onGlobalVarChanged(pluginId, varName) {
+            if (pluginId === "hueDirector" && varName === "pairingRevision")
+                bridge.loadConfig();
+        }
+    }
 
     // Shared shell functions. pin_of IP: sha256 of the bridge public key, base64 (44 chars)
     // (an unreachable bridge gives no key: fail instead of hashing empty input)
@@ -55,6 +67,7 @@ Item {
         + "write_conf \"$1\" \"$ip\" \"$key\" \"$pin\" && echo OK\n"
 
     function curlArgs(path) {
+        // path is relative to /clip/v2/, e.g. "resource" or "resource/light/<id>"
         return ["curl", "-K", confPath, "--expand-url", "https://{{ip}}/clip/v2/" + path];
     }
 
@@ -67,7 +80,8 @@ Item {
         }, 0);
     }
 
-    // cb(result, error): result is {rooms, lights} in the shape the UI uses, error a message or ""
+    // cb(result, error): result is {rooms, lights} in the shape the UI uses,
+    // error "" or "unpaired" or "certchanged" or a message
     function fetchAll(cb) {
         Proc.runCommand(procPrefix + "fetch", curlArgs("resource").concat(["-m", "10", "-w", "\n%{http_code}"]), (stdout, exitCode) => {
             const response = parseResponse(stdout, exitCode);
@@ -79,9 +93,18 @@ Item {
         }, 200);
     }
 
-    // kind: "light" | "grouped_light" | "scene". Debounced per resource, so slider drags send one request
+    // kind: "light" | "grouped_light" | "scene". Debounced per resource, so slider drags send one request.
+    // The debounce keeps only the last call, so bodies are merged: a toggle followed by a slider move
+    // within 300 ms sends both. color and color_temperature exclude each other, the latest wins
     function put(kind, id, body, cb) {
-        Proc.runCommand(procPrefix + "put." + id, curlArgs(kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(body), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+        const merged = Object.assign({}, pendingBodies[id] ?? {}, body);
+        if (body.color)
+            delete merged.color_temperature;
+        if (body.color_temperature)
+            delete merged.color;
+        pendingBodies[id] = merged;
+        Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(merged), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+            delete pendingBodies[id];
             cb(parseResponse(stdout, exitCode).error);
         }, 300);
     }
@@ -90,8 +113,9 @@ Item {
     function parseResponse(stdout, exitCode) {
         if (exitCode === 26)
             return { error: "unpaired" };
+        // Pinned public key mismatch: replaced bridge, or another device on its address
         if (exitCode === 90)
-            return { error: I18n.trFor("hueDirector", "The bridge certificate changed: pair again") };
+            return { error: "certchanged" };
         if (exitCode === 6 || exitCode === 7 || exitCode === 28)
             return { error: I18n.trFor("hueDirector", "Hue Bridge not reachable") };
         if (exitCode !== 0)
