@@ -134,10 +134,12 @@ Item {
     }
 
     // Joins flat v2 resources into the shape the UI was built on:
-    // room {Id, Name, GroupedLight.HueData, Scenes[] {Id, Name, HueData}}, light {Id, Name, HueData, Parent.Parent.Id = room}
+    // room {Id, Name, Archetype, GroupedLight.HueData, Scenes[] {Id, Name, HueData}},
+    // light {Id, Name, Archetype, HueData, Parent.Parent.Id = room}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
         const deviceRoom = {};
         const groupedByRoom = {};
+        let homeGroupedId = "";
         const scenesByRoom = {};
         for (const r of data) {
             if (r.type === "room")
@@ -146,22 +148,26 @@ Item {
                         deviceRoom[c.rid] = r.id;
             if (r.type === "grouped_light" && r.owner?.rtype === "room")
                 groupedByRoom[r.owner.rid] = r;
+            if (r.type === "grouped_light" && r.owner?.rtype === "bridge_home")
+                homeGroupedId = r.id;
             if (r.type === "scene" && r.group?.rtype === "room")
                 (scenesByRoom[r.group.rid] = scenesByRoom[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r });
         }
         const rooms = data.filter(r => r.type === "room").map(r => ({
             Id: r.id,
             Name: r.metadata?.name ?? "",
+            Archetype: r.metadata?.archetype ?? "",
             GroupedLight: groupedByRoom[r.id] ? { HueData: groupedByRoom[r.id] } : null,
             Scenes: scenesByRoom[r.id] ?? []
         }));
         const lights = data.filter(r => r.type === "light").map(l => ({
             Id: l.id,
             Name: l.metadata?.name ?? "",
+            Archetype: l.metadata?.archetype ?? "",
             HueData: l,
             Parent: { Id: l.owner?.rid, Parent: { Id: deviceRoom[l.owner?.rid] } }
         }));
-        return { rooms: rooms, lights: lights };
+        return { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId };
     }
 
     // sRGB 0..1 -> CIE xy (Wide RGB D65 matrix from the Hue developer docs).

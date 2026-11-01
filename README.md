@@ -7,10 +7,9 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 ## Features
 
 - **Bar pill**: lightbulb icon and number of lights on, for the whole home or a favorite room. Turns red when the bridge can't be reached.
-- **Rooms**: turn each room on or off and set its brightness.
-- **Lights**: expand a room to control each light: on/off and brightness.
-- **Color**: for lights that support it, set the color temperature (in Kelvin), change the hue with a rainbow slider, or open the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
-- **Scenes**: expand a room to activate one of its scenes; the active scene is highlighted.
+- **Room cards**: one card per room with its icon, how many lights are on, an on/off switch and a brightness slider. Cards are tinted with the current color of the room's lights. A button turns off every light in the home.
+- **Room page**: click a card to open the room. Scenes are shown as tiles painted with the scene's own colors; the active scene is marked. Each light has its own switch and brightness slider.
+- **Color**: click a light to show its color controls: color temperature (in Kelvin), a rainbow hue slider, and the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
 - **Live updates**: changes made from the Hue app or switches show up right away, through the bridge event stream. If the stream fails, the plugin falls back to polling every 30 seconds.
 
 The plugin talks only to your Hue Bridge. The only internet request is bridge discovery through `discovery.meethue.com`, and only when the bridge isn't found on the local network.

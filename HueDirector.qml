@@ -13,6 +13,10 @@ PluginComponent {
     // Bridge data, in the shape built by HueBridge.normalize()
     property var rooms: []
     property var lights: []
+    // grouped_light of the whole home, for "all off"
+    property string homeGroupedId: ""
+    // Room whose page is open in the popout; "" shows the room cards
+    property string openRoomId: ""
     property string error: ""
     property bool loaded: false
     // False when there is no pairing or the bridge rejects the key; PairingPanel replaces the room list
@@ -114,6 +118,7 @@ PluginComponent {
             result.rooms.forEach(r => r.Scenes.sort(byName));
             rooms = result.rooms.sort(byName);
             lights = result.lights.sort(byName);
+            homeGroupedId = result.homeGroupedId;
             error = "";
             loaded = true;
             paired = true;
@@ -143,7 +148,74 @@ PluginComponent {
             setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
     }
 
-    onInteractionActiveChanged: if (interactionActive) refresh()
+    // Reopening the popout starts from the room cards
+    onInteractionActiveChanged: {
+        if (interactionActive)
+            refresh();
+        else
+            openRoomId = "";
+    }
+    // Back to the room cards if the open room was removed from the bridge
+    onRoomsChanged: if (openRoomId && !rooms.some(r => r.Id === openRoomId)) openRoomId = ""
+
+    // Material Symbols for Hue room archetypes; unknown ones fall back to meeting_room
+    readonly property var roomIcons: ({
+            living_room: "weekend", lounge: "weekend", kitchen: "kitchen", dining: "dining", bedroom: "bed", guest_room: "bed",
+            kids_bedroom: "child_care", nursery: "crib", bathroom: "bathtub", toilet: "wc", office: "desk", computer: "computer",
+            studio: "mic", music: "music_note", tv: "tv", reading: "menu_book", recreation: "sports_esports", gym: "fitness_center",
+            hallway: "door_front", front_door: "door_front", staircase: "stairs", upstairs: "stairs", downstairs: "stairs",
+            top_floor: "roofing", attic: "roofing", garage: "garage", carport: "garage", driveway: "directions_car",
+            terrace: "deck", porch: "deck", balcony: "balcony", garden: "yard", barbecue: "outdoor_grill", pool: "pool",
+            closet: "checkroom", storage: "inventory_2", laundry_room: "local_laundry_service", man_cave: "sports_bar", home: "home"
+        })
+
+    function roomIcon(archetype) {
+        return roomIcons[archetype] ?? "meeting_room";
+    }
+
+    // Hue light archetypes by family (hue_lightstrip_pc, pendant_round, ...); fallback lightbulb
+    function lightIcon(archetype) {
+        const a = archetype ?? "";
+        if (a.indexOf("lightstrip") !== -1)
+            return "linear_scale";
+        if (a.startsWith("hue_play"))
+            return "tv";
+        if (a.startsWith("pendant") || a.startsWith("ceiling"))
+            return "light";
+        if (a.startsWith("floor"))
+            return "floor_lamp";
+        if (a.startsWith("table") || a.startsWith("desk"))
+            return "table_lamp";
+        if (a.startsWith("wall"))
+            return "wall_lamp";
+        if (a.indexOf("spot") !== -1 || a.indexOf("flood") !== -1)
+            return "highlight";
+        return "lightbulb";
+    }
+
+    // Up to 3 colors for a scene tile: palette colors, else palette temperatures, else the per-light actions
+    function sceneColors(scene) {
+        const hd = scene?.HueData;
+        const out = [];
+        const add = rgb => {
+            if (rgb && out.length < 3)
+                out.push(rgbColor(rgb));
+        };
+        for (const p of hd?.palette?.color ?? [])
+            add(xyToRgb(p.color.xy.x, p.color.xy.y));
+        if (!out.length)
+            for (const p of hd?.palette?.color_temperature ?? [])
+                add(mirekToRgb(p.color_temperature.mirek));
+        if (!out.length)
+            for (const a of hd?.actions ?? []) {
+                const act = a.action ?? {};
+                if (act.color?.xy)
+                    add(xyToRgb(act.color.xy.x, act.color.xy.y));
+                else if (act.color_temperature?.mirek)
+                    add(mirekToRgb(act.color_temperature.mirek));
+            }
+        return out;
+    }
 
     // Consecutive event stream failures; reset whenever an event arrives
     property int eventsRestarts: 0
@@ -257,199 +329,226 @@ PluginComponent {
         PopoutComponent {
             id: popout
             headerText: "Hue Director"
-            detailsText: !root.paired ? "" : root.error || (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…"))
-
-            // PairingPanel already says "Not paired", so detailsText stays empty (certChanged shows the error)
+            // One-line header: the lights-on summary sits in the home page toolbar, details only show errors
+            // (PairingPanel already says "Not paired"; certChanged shows its error here)
+            detailsText: root.paired ? root.error : ""
             PairingPanel {
                 bridge: hueBridge
                 visible: root.needsPairing
             }
 
-            DFlickable {
+            // PluginPopout sizes the popout from this component's implicitHeight, so the popout grows
+            // with the open page (all controls visible without scrolling) up to 75% of the screen
+            Item {
                 visible: !root.needsPairing
                 width: parent.width
-                height: root.popoutHeight - popout.headerHeight - popout.detailsHeight - Theme.spacingL * 2
-                contentWidth: width
-                contentHeight: roomList.implicitHeight
-                clip: true
+                height: Math.min((root.parentScreen?.height ?? 1000) * 0.75 - popout.headerHeight - popout.detailsHeight, root.openRoomId === "" ? homeColumn.implicitHeight : roomPage.implicitHeight)
 
-                Column {
-                    id: roomList
-                    width: parent.width
-                    spacing: Theme.spacingM
+                // Home: one card per room
+                DFlickable {
+                    anchors.fill: parent
+                    visible: root.openRoomId === ""
+                    contentWidth: width
+                    contentHeight: homeColumn.implicitHeight
+                    clip: true
 
-                    Repeater {
-                        // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
-                        model: root.rooms.length
+                    Column {
+                        id: homeColumn
+                        width: parent.width
+                        spacing: Theme.spacingS
 
-                        Column {
-                            id: roomItem
-                            required property int index
-                            readonly property var room: root.rooms[index]
-                            readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
-                            readonly property var scenes: room?.Scenes ?? []
-                            // status.active is "inactive", "static" or "dynamic_palette"
-                            readonly property string activeSceneId: scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive")?.Id ?? ""
-                            // Clicked scene held until the bridge reports it active, like HeldSlider.pending
-                            property string pendingSceneId: ""
-
-                            onActiveSceneIdChanged: if (activeSceneId === pendingSceneId) pendingSceneId = ""
-
-                            Timer {
-                                id: pendingSceneTimeout
-                                interval: 3000
-                                onTriggered: roomItem.pendingSceneId = ""
-                            }
-
+                        Item {
                             width: parent.width
-                            spacing: Theme.spacingXS
+                            height: allOffButton.height
 
-                            ControlRow {
-                                id: roomControl
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…")
+                                font.pixelSize: Theme.fontSizeMedium
+                                font.weight: Font.Medium
+                                color: Theme.surfaceVariantText
+                            }
+
+                            DIconButton {
+                                id: allOffButton
+                                anchors.right: parent.right
+                                visible: root.lightsOn > 0 && root.homeGroupedId !== ""
+                                iconName: "power_settings_new"
+                                tooltipText: I18n.trFor("hueDirector", "Turn off all lights")
+                                onClicked: root.setResource("grouped_light", root.homeGroupedId, { on: { on: false } })
+                            }
+                        }
+
+                        Repeater {
+                            // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
+                            model: root.rooms.length
+
+                            RoomCard {
+                                required property int index
+                                readonly property var room: root.rooms[index]
+                                readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
+                                readonly property int onCount: roomLights.filter(l => l.HueData?.on?.on).length
+
                                 width: parent.width
-                                accentColor: root.rgbColor(root.averageRgb(roomItem.roomLights))
-                                name: roomItem.room?.Name ?? ""
-                                isOn: roomItem.room?.GroupedLight?.HueData?.on?.on ?? false
-                                brightness: Math.round(roomItem.room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
-                                dimmable: !!roomItem.room?.GroupedLight?.HueData?.dimming
-                                expandable: roomItem.roomLights.length > 0 || roomItem.scenes.length > 0
-                                onToggleRequested: on => root.setRoom(roomItem.room, { on: { on: on } })
-                                onBrightnessRequested: value => root.setRoom(roomItem.room, { on: { on: true }, dimming: { brightness: value } })
+                                name: room?.Name ?? ""
+                                icon: root.roomIcon(room?.Archetype)
+                                isOn: room?.GroupedLight?.HueData?.on?.on ?? false
+                                brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
+                                dimmable: !!room?.GroupedLight?.HueData?.dimming
+                                accentColor: root.rgbColor(root.averageRgb(roomLights))
+                                subtitle: isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")
+                                onToggleRequested: on => root.setRoom(room, { on: { on: on } })
+                                onBrightnessRequested: value => root.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
+                                onClicked: root.openRoomId = room.Id
+                            }
+                        }
+                    }
+                }
+
+                // Room page: scenes and lights of root.openRoomId
+                DFlickable {
+                    anchors.fill: parent
+                    visible: root.openRoomId !== ""
+                    contentWidth: width
+                    contentHeight: roomPage.implicitHeight
+                    clip: true
+
+                    Column {
+                        id: roomPage
+
+                        readonly property var room: root.rooms.find(r => r.Id === root.openRoomId) ?? null
+                        readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
+                        readonly property var scenes: room?.Scenes ?? []
+                        // status.active is "inactive", "static" or "dynamic_palette"
+                        readonly property string activeSceneId: scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive")?.Id ?? ""
+                        // Clicked scene held until the bridge reports it active, like HeldSlider.pending
+                        property string pendingSceneId: ""
+                        // One light at a time shows its color controls
+                        property string expandedLightId: ""
+
+                        onActiveSceneIdChanged: if (activeSceneId === pendingSceneId) pendingSceneId = ""
+
+                        width: parent.width
+                        spacing: Theme.spacingM
+
+                        Connections {
+                            target: root
+                            function onOpenRoomIdChanged() {
+                                roomPage.pendingSceneId = "";
+                                roomPage.expandedLightId = "";
+                            }
+                        }
+
+                        Timer {
+                            id: pendingSceneTimeout
+                            interval: 3000
+                            onTriggered: roomPage.pendingSceneId = ""
+                        }
+
+                        Row {
+                            width: parent.width
+                            spacing: Theme.spacingS
+
+                            DIconButton {
+                                id: backButton
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "arrow_back"
+                                tooltipText: I18n.trFor("hueDirector", "All rooms")
+                                onClicked: root.openRoomId = ""
                             }
 
-                            DFilterChips {
-                                x: Theme.spacingL
-                                width: roomItem.width - x
-                                visible: roomControl.expanded && roomItem.scenes.length > 0
-                                showCounts: false
-                                model: roomItem.scenes.map(s => ({ label: s.Name }))
-                                onSelectionChanged: index => {
-                                    roomItem.pendingSceneId = roomItem.scenes[index].Id;
-                                    pendingSceneTimeout.restart();
-                                    root.setResource("scene", roomItem.pendingSceneId, { recall: { action: "active" } });
-                                }
-
-                                // Chips assign currentIndex on click, which would break a plain binding
-                                Binding on currentIndex {
-                                    value: roomItem.scenes.findIndex(s => s.Id === (roomItem.pendingSceneId || roomItem.activeSceneId))
-                                }
+                            DIcon {
+                                id: pageIcon
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: root.roomIcon(roomPage.room?.Archetype)
+                                size: Theme.iconSize
+                                color: Theme.surfaceText
                             }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - backButton.width - pageIcon.width - pageToggle.width - parent.spacing * 3
+                                text: roomPage.room?.Name ?? ""
+                                elide: Text.ElideRight
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.weight: Font.Medium
+                                color: Theme.surfaceText
+                            }
+
+                            DToggle {
+                                id: pageToggle
+                                anchors.verticalCenter: parent.verticalCenter
+                                checked: roomPage.room?.GroupedLight?.HueData?.on?.on ?? false
+                                onToggled: checked => root.setRoom(roomPage.room, { on: { on: checked } })
+                            }
+                        }
+
+                        StyledText {
+                            visible: roomPage.scenes.length > 0
+                            text: I18n.trFor("hueDirector", "Scenes")
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
+
+                        Grid {
+                            id: sceneGrid
+                            width: parent.width
+                            columns: 3
+                            spacing: Theme.spacingS
 
                             Repeater {
-                                model: roomControl.expanded ? roomItem.roomLights.length : 0
+                                model: roomPage.scenes.length
 
-                                Column {
-                                    id: lightItem
+                                SceneTile {
                                     required property int index
-                                    readonly property var light: roomItem.roomLights[index]
-                                    readonly property var colorTemp: light?.HueData?.color_temperature ?? null
-                                    readonly property bool hasColor: !!light?.HueData?.color
-                                    readonly property color accentColor: root.rgbColor(root.lightRgb(light))
+                                    readonly property var scene: roomPage.scenes[index]
 
-                                    x: Theme.spacingL
-                                    width: roomItem.width - x
-                                    spacing: Theme.spacingXS
-
-                                    ControlRow {
-                                        id: lightControl
-                                        width: parent.width
-                                        accentColor: lightItem.accentColor
-                                        name: lightItem.light?.Name ?? ""
-                                        isOn: lightItem.light?.HueData?.on?.on ?? false
-                                        brightness: Math.round(lightItem.light?.HueData?.dimming?.brightness ?? 0)
-                                        dimmable: !!lightItem.light?.HueData?.dimming
-                                        expandable: lightItem.hasColor || !!lightItem.colorTemp
-                                        onToggleRequested: on => root.setResource("light", lightItem.light.Id, { on: { on: on } })
-                                        onBrightnessRequested: value => root.setResource("light", lightItem.light.Id, { on: { on: true }, dimming: { brightness: value } })
+                                    width: (sceneGrid.width - sceneGrid.spacing * (sceneGrid.columns - 1)) / sceneGrid.columns
+                                    name: scene?.Name ?? ""
+                                    colors: root.sceneColors(scene)
+                                    active: scene?.Id === (roomPage.pendingSceneId || roomPage.activeSceneId)
+                                    onActivated: {
+                                        roomPage.pendingSceneId = scene.Id;
+                                        pendingSceneTimeout.restart();
+                                        root.setResource("scene", scene.Id, { recall: { action: "active" } });
                                     }
+                                }
+                            }
+                        }
 
-                                    // Color temperature in Kelvin (bridge uses mirek = 1e6 / K)
-                                    HeldSlider {
-                                        width: parent.width
-                                        visible: lightControl.expanded && !!lightItem.colorTemp
-                                        minimum: Math.round(1e6 / (lightItem.colorTemp?.mirek_schema?.mirek_maximum ?? 500))
-                                        maximum: Math.round(1e6 / (lightItem.colorTemp?.mirek_schema?.mirek_minimum ?? 153))
-                                        step: 50
-                                        unit: "K"
-                                        startIcon: "wb_incandescent"
-                                        endIcon: "wb_sunny"
-                                        // In color mode (mirek_valid false) keep the last known temperature;
-                                        // before any, the middle of the light's range
-                                        readonly property int currentMirek: lightItem.colorTemp?.mirek_valid ? (lightItem.colorTemp.mirek ?? 0) : 0
-                                        property int knownMirek: 0
+                        StyledText {
+                            visible: roomPage.roomLights.length > 0
+                            text: I18n.trFor("hueDirector", "Lights")
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
 
-                                        onCurrentMirekChanged: if (currentMirek > 0) knownMirek = currentMirek
-                                        Component.onCompleted: if (currentMirek > 0) knownMirek = currentMirek
+                        Column {
+                            width: parent.width
+                            spacing: Theme.spacingS
 
-                                        reported: knownMirek > 0 ? Math.round(1e6 / knownMirek) : Math.round((minimum + maximum) / 2)
-                                        // Kelvin -> mirek -> Kelvin rounding drifts up to ~50K at the cold end
-                                        tolerance: 100
-                                        fillColor: lightControl.visibleAccent
-                                        fillTextColor: lightControl.accentTextColor
-                                        onRequested: value => root.setResource("light", lightItem.light.Id, { on: { on: true }, color_temperature: { mirek: Math.round(1e6 / value) } })
+                            Repeater {
+                                // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
+                                model: roomPage.roomLights.length
+
+                                LightRow {
+                                    required property int index
+
+                                    width: parent.width
+                                    light: roomPage.roomLights[index]
+                                    icon: root.lightIcon(light?.Archetype)
+                                    currentRgb: root.lightRgb(light)
+                                    expanded: roomPage.expandedLightId === light?.Id
+                                    applyColor: {
+                                        const lightId = light?.Id;
+                                        return c => root.setColor(lightId, c);
                                     }
-
-                                    // Swatch takes the slot of the end icon of the sliders above (DSlider SideIcon: iconSize wide, spacingM gap)
-                                    Row {
-                                        width: parent.width
-                                        visible: lightControl.expanded && lightItem.hasColor
-                                        spacing: Theme.spacingM
-
-                                        // Fully saturated hue; the picker covers pastel tones and exact colors
-                                        HeldSlider {
-                                            id: hueSlider
-                                            readonly property var currentRgb: root.lightRgb(lightItem.light)
-                                            readonly property real currentHue: currentRgb ? root.rgbColor(currentRgb).hsvHue : -1
-                                            // Achromatic or off (currentHue < 0): keep the last known hue
-                                            property int knownHue: 0
-
-                                            onCurrentHueChanged: if (currentHue >= 0) knownHue = Math.round(currentHue * 360)
-                                            Component.onCompleted: if (currentHue >= 0) knownHue = Math.round(currentHue * 360)
-
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - pickerButton.width - parent.spacing
-                                            minimum: 0
-                                            maximum: 359
-                                            showValue: false
-                                            startIcon: "palette"
-                                            reported: knownHue
-                                            // xy <-> RGB round trips drift a few degrees
-                                            tolerance: 5
-                                            onRequested: value => root.setColor(lightItem.light.Id, Qt.hsva(value / 360, 1, 1, 1))
-
-                                            // Same rainbow track as the shell color picker (Modules/ColorPicker/ColorPickerContent.qml)
-                                            trackGradient: Gradient {
-                                                orientation: Gradient.Horizontal
-                                                GradientStop { position: 0; color: Qt.hsva(0, 1, 1, 1) }
-                                                GradientStop { position: 1 / 6; color: Qt.hsva(1 / 6, 1, 1, 1) }
-                                                GradientStop { position: 2 / 6; color: Qt.hsva(2 / 6, 1, 1, 1) }
-                                                GradientStop { position: 3 / 6; color: Qt.hsva(3 / 6, 1, 1, 1) }
-                                                GradientStop { position: 4 / 6; color: Qt.hsva(4 / 6, 1, 1, 1) }
-                                                GradientStop { position: 5 / 6; color: Qt.hsva(5 / 6, 1, 1, 1) }
-                                                GradientStop { position: 1; color: Qt.hsva(1, 1, 1, 1) }
-                                            }
-                                        }
-
-                                        // Opens the shell color picker (hex, color area, eyedropper, recent colors)
-                                        DColorButton {
-                                            id: pickerButton
-                                            width: Theme.iconSize
-                                            height: Theme.iconSize
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            swatchColor: lightItem.accentColor
-                                            tooltipText: I18n.trFor("hueDirector", "More colors…")
-                                            onClicked: {
-                                                const picker = PopoutService.colorPickerModal;
-                                                if (!picker)
-                                                    return;
-                                                const lightId = lightItem.light.Id;
-                                                picker.selectedColor = lightItem.accentColor;
-                                                picker.pickerTitle = lightItem.light.Name;
-                                                picker.onColorSelectedCallback = c => root.setColor(lightId, c);
-                                                picker.show();
-                                            }
-                                        }
-                                    }
+                                    onExpandToggled: roomPage.expandedLightId = expanded ? "" : light.Id
+                                    onToggleRequested: on => root.setResource("light", light.Id, { on: { on: on } })
+                                    onBrightnessRequested: value => root.setResource("light", light.Id, { on: { on: true }, dimming: { brightness: value } })
+                                    onTemperatureRequested: mirek => root.setResource("light", light.Id, { on: { on: true }, color_temperature: { mirek: mirek } })
                                 }
                             }
                         }
@@ -460,5 +559,6 @@ PluginComponent {
     }
 
     popoutWidth: 420
-    popoutHeight: 480
+    // Initial size only: PluginPopout then follows the content height (see the pages Item)
+    popoutHeight: 520
 }
