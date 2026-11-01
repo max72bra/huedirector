@@ -9,6 +9,7 @@
     "capabilities": ["dankbar-widget"],
     "component": "./HueDirector.qml",
     "settings": "./HueDirectorSettings.qml",
+    "startupCheck": "./StartupCheck.qml",
     "icon": "lightbulb",
     "dependencies": ["openhue-cli"],
     "requires_dms": ">=2.0.0",
