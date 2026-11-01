@@ -217,6 +217,49 @@ PluginComponent {
         return "lightbulb";
     }
 
+    // The bridge marks a scene inactive as soon as one of its lights changes (even off and back on) and never
+    // re-activates it, so the scene shown as current is: the one the bridge reports active, else the scene whose
+    // actions match the lights' current state (latest last_recall wins when several match), else none
+    function currentSceneId(scenes) {
+        const active = scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive");
+        if (active)
+            return active.Id;
+        const matching = scenes.filter(sceneMatchesLights);
+        matching.sort((a, b) => (b.HueData?.status?.last_recall ?? "").localeCompare(a.HueData?.status?.last_recall ?? ""));
+        return matching[0]?.Id ?? "";
+    }
+
+    // Tolerances absorb the bridge's rounding: brightness ±2, mirek ±5, xy ±0.015 (gamut mapping)
+    function sceneMatchesLights(scene) {
+        const actions = scene?.HueData?.actions ?? [];
+        if (!actions.length)
+            return false;
+        return actions.every(a => {
+            const light = lights.find(l => l.Id === a.target?.rid)?.HueData;
+            const want = a.action ?? {};
+            if (!light)
+                return false;
+            const isOn = light.on?.on ?? false;
+            if ((want.on?.on ?? true) !== isOn)
+                return false;
+            if (!isOn)
+                return true;
+            if (want.dimming && Math.abs(want.dimming.brightness - (light.dimming?.brightness ?? -100)) > 2)
+                return false;
+            if (want.color_temperature?.mirek) {
+                const ct = light.color_temperature;
+                if (!ct?.mirek_valid || Math.abs(want.color_temperature.mirek - ct.mirek) > 5)
+                    return false;
+            }
+            if (want.color?.xy) {
+                const xy = light.color?.xy;
+                if (!xy || light.color_temperature?.mirek_valid || Math.abs(want.color.xy.x - xy.x) > 0.015 || Math.abs(want.color.xy.y - xy.y) > 0.015)
+                    return false;
+            }
+            return true;
+        });
+    }
+
     // Up to 3 colors for a scene tile: palette colors, else palette temperatures, else the per-light actions
     function sceneColors(scene) {
         const hd = scene?.HueData;
@@ -454,8 +497,7 @@ PluginComponent {
                         readonly property var room: root.rooms.find(r => r.Id === root.openRoomId) ?? null
                         readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
                         readonly property var scenes: room?.Scenes ?? []
-                        // status.active is "inactive", "static" or "dynamic_palette"
-                        readonly property string activeSceneId: scenes.find(s => (s.HueData?.status?.active ?? "inactive") !== "inactive")?.Id ?? ""
+                        readonly property string activeSceneId: root.currentSceneId(scenes)
                         // Clicked scene held until the bridge reports it active, like HeldSlider.pending
                         property string pendingSceneId: ""
                         // One light at a time shows its color controls
