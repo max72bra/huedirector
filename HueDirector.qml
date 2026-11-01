@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import qs.Common
 import qs.Widgets
 import qs.DCommon.Widgets
@@ -61,8 +62,41 @@ PluginComponent {
     Component.onCompleted: refresh()
     onInteractionActiveChanged: if (interactionActive) refresh()
 
+    // Consecutive event stream failures; reset whenever an event arrives
+    property int eventsRestarts: 0
+    readonly property int maxEventsRestarts: 5
+    readonly property bool eventsActive: eventsProcess.running && eventsRestarts <= maxEventsRestarts
+
+    // Live updates (openhue events are alpha): any event triggers a refresh,
+    // Proc debounce in fetch() collapses bursts into one call
+    Process {
+        id: eventsProcess
+        running: true
+        command: ["openhue", "get", "events"]
+        onExited: (exitCode, exitStatus) => {
+            if (++root.eventsRestarts > root.maxEventsRestarts) {
+                console.warn("Hue Director: event stream keeps failing - falling back to polling");
+                return;
+            }
+            eventsRestartTimer.restart();
+        }
+        stdout: SplitParser {
+            onRead: line => {
+                root.eventsRestarts = 0;
+                root.refresh();
+            }
+        }
+    }
+
     Timer {
-        interval: 30000
+        id: eventsRestartTimer
+        interval: 5000
+        onTriggered: eventsProcess.running = true
+    }
+
+    // Safety net while events are active, main source when they are not
+    Timer {
+        interval: root.eventsActive ? 300000 : 30000
         running: root.surfaceLive
         repeat: true
         onTriggered: root.refresh()
