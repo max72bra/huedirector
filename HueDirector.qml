@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -10,37 +9,37 @@ import "."
 PluginComponent {
     id: root
 
-    // Bridge data, in the shape built by HueBridge.normalize()
-    property var rooms: []
-    property var lights: []
-    // grouped_light of the whole home, for "all off"
-    property string homeGroupedId: ""
+    // State, commands and the event stream live in the daemon (HueEvents.qml), one for all bars
+    readonly property var hue: PluginService.pluginDaemonInstances["hueDirector"] ?? null
+    readonly property var rooms: hue?.rooms ?? []
+    readonly property var lights: hue?.lights ?? []
+    readonly property string homeGroupedId: hue?.homeGroupedId ?? ""
+    readonly property string error: hue?.error ?? ""
+    readonly property bool loaded: hue?.loaded ?? false
+    readonly property bool paired: hue?.paired ?? true
+    readonly property bool needsPairing: hue?.needsPairing ?? false
+    readonly property int lightsOn: hue?.lightsOn ?? 0
     // Room whose page is open in the popout; "" shows the room cards
     property string openRoomId: ""
-    property string error: ""
-    property bool loaded: false
-    // False when there is no pairing or the bridge rejects the key; PairingPanel replaces the room list
-    property bool paired: true
-    // The bridge answered with a different public key than at pairing (replaced bridge or another device)
-    property bool certChanged: false
-    readonly property bool needsPairing: !paired || certChanged
-
-    readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
 
     // Pill shows the favorite room only; "all" or a removed room falls back to the whole home
     readonly property string favoriteRoomId: pluginData?.favoriteRoom ?? ""
     readonly property bool hasFavorite: rooms.some(r => r.Id === favoriteRoomId)
-    readonly property int pillLightsOn: hasFavorite ? lights.filter(l => l.Parent?.Parent?.Id === favoriteRoomId && l.HueData?.on?.on).length : lightsOn
+    readonly property int pillLightsOn: hasFavorite ? roomLightsOf(favoriteRoomId).filter(l => l.Reachable && l.HueData?.on?.on).length : lightsOn
     // Settings: number next to the pill icon (default on); off leaves only the icon and its color
     readonly property bool showLightCount: pluginData?.showLightCount ?? true
     readonly property string pillIcon: !paired ? "link_off" : error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
     readonly property color pillColor: paired && error ? Theme.error : (paired && pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
-    // Current color of a light as [r, g, b] in 0..1 at full brightness, or null when off/unknown.
-    // mirek_valid tells whether the light is in color temperature mode or xy color mode
+    function roomLightsOf(roomId) {
+        return lights.filter(l => l.Parent?.Parent?.Id === roomId);
+    }
+
+    // Current color of a light as [r, g, b] in 0..1 at full brightness, or null when off, unreachable
+    // or unknown. mirek_valid tells whether the light is in color temperature mode or xy color mode
     function lightRgb(light) {
         const hd = light?.HueData;
-        if (!hd?.on?.on)
+        if (!hd?.on?.on || !light.Reachable)
             return null;
         if (hd.color_temperature?.mirek_valid && hd.color_temperature.mirek)
             return mirekToRgb(hd.color_temperature.mirek);
@@ -80,151 +79,13 @@ PluginComponent {
         return rgb ? Qt.rgba(rgb[0], rgb[1], rgb[2], 1) : Theme.primary;
     }
 
-    HueBridge {
-        id: hueBridge
-        transitionMs: parseInt(root.pluginData?.transitionMs ?? "-1")
-        // New pairing: reconnect the event stream with the new key/bridge (refresh() restarts it)
-        onConfigChanged: {
-            root.eventsRestarts = 0;
-            eventsProcess.running = false;
-            root.refresh();
-        }
-    }
-
-    // Shared by fetch and put. Returns true when err was handled as an error
-    function handleError(err) {
-        if (!err)
-            return false;
-        console.warn("Hue Director:", err);
-        if (err === "unpaired") {
-            paired = false;
-            error = "";
-        } else if (err === "certchanged") {
-            certChanged = true;
-            error = I18n.trFor("hueDirector", "The bridge identity changed: pair again");
-        } else {
-            error = err;
-        }
-        return true;
-    }
-
-    function refresh() {
-        if (!hueBridge.configured) {
-            paired = false;
-            return;
-        }
-        hueBridge.fetchAll((result, err) => {
-            if (handleError(err))
-                return;
-            // Bridge order is not stable (scenes move after activation): sort everything by name
-            const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
-            result.rooms.forEach(r => r.Scenes.sort(byName));
-            rooms = result.rooms.sort(byName);
-            lights = result.lights.sort(byName);
-            homeGroupedId = result.homeGroupedId;
-            error = "";
-            loaded = true;
-            paired = true;
-            certChanged = false;
-            startEvents();
-        });
-    }
-
-    // kind: "light" | "grouped_light" | "scene", body: Hue API v2 PUT body
-    function setResource(kind, id, body) {
-        hueBridge.put(kind, id, body, err => {
-            if (!handleError(err))
-                refresh();
-        });
-    }
-
-    // Rooms are controlled through their grouped_light service
-    function setRoom(room, body) {
-        const groupedId = room?.GroupedLight?.HueData?.id;
-        if (groupedId)
-            setResource("grouped_light", groupedId, body);
-    }
-
     // Right click on the pill toggles the favorite light, room or whole home (settings: favoriteLight)
-    pillRightClickAction: () => toggleFavorite()
-
-    function toggleFavorite() {
-        const t = hueBridge.parseTarget(pluginData?.favoriteLight);
-        if (t)
-            setResource(t.kind, t.id, { on: { on: !hueBridge.targetIsOn(t, { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId }) } });
-    }
-
-    // Soft blink: two brightness pulses in 2.5 s (4 steps of 625 ms, each a 600 ms fade), then back to the
-    // light's previous state. Hue "breathe" can't be stopped and runs far longer on some lights
-    readonly property int identifyStepMs: 625
-    // light id -> remaining PUT bodies
-    property var identifyQueue: ({})
-
-    function identify(light) {
-        const hd = light?.HueData;
-        if (!hd || identifyQueue[light.Id])
-            return;
-        const fade = { duration: identifyStepMs - 25 };
-        let steps;
-        if (hd.on?.on) {
-            const bri = hd.dimming?.brightness ?? 100;
-            // Dim a bright light, brighten a dim one: the pulse must be visible either way
-            const pulse = bri > 40 ? Math.max(1, Math.round(bri * 0.15)) : 100;
-            steps = [pulse, bri, pulse, bri].map(b => ({ dimming: { brightness: b }, dynamics: fade }));
-        } else {
-            steps = [{ on: { on: true }, dimming: { brightness: 100 }, dynamics: fade }, { dimming: { brightness: 5 }, dynamics: fade }, { dimming: { brightness: 100 }, dynamics: fade }, { on: { on: false }, dynamics: fade }];
-        }
-        identifyQueue = Object.assign({}, identifyQueue, { [light.Id]: steps });
-        identifyStep();
-        identifyTimer.start();
-    }
-
-    function identifyStep() {
-        const next = {};
-        for (const id in identifyQueue) {
-            const steps = identifyQueue[id];
-            setResource("light", id, steps[0]);
-            if (steps.length > 1)
-                next[id] = steps.slice(1);
-        }
-        identifyQueue = next;
-        if (Object.keys(next).length === 0)
-            identifyTimer.stop();
-    }
-
-    Timer {
-        id: identifyTimer
-        interval: root.identifyStepMs
-        repeat: true
-        onTriggered: root.identifyStep()
-    }
-
-    // Timed effects (sunrise/sunset) need a duration: 30 minutes, like the Hue app default.
-    // "no_effect" clears both kinds, since only one of them can be running
-    function setEffect(light, value) {
-        const timed = light?.HueData?.timed_effects?.effect_values ?? [];
-        let body;
-        if (value === "no_effect")
-            body = { effects: { effect: "no_effect" } };
-        else if (timed.includes(value))
-            body = { on: { on: true }, timed_effects: { effect: value, duration: 1800000 } };
-        else
-            body = { on: { on: true }, effects: { effect: value } };
-        if (value === "no_effect" && light?.HueData?.timed_effects?.status && light.HueData.timed_effects.status !== "no_effect")
-            body.timed_effects = { effect: "no_effect" };
-        setResource("light", light.Id, body);
-    }
-
-    function setColor(lightId, c) {
-        const xy = hueBridge.rgbToXy(c);
-        if (xy)
-            setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
-    }
+    pillRightClickAction: () => hue?.toggleFavorite()
 
     // Reopening the popout starts from the room cards
     onInteractionActiveChanged: {
         if (interactionActive)
-            refresh();
+            hue?.refresh();
         else
             openRoomId = "";
     }
@@ -333,72 +194,6 @@ PluginComponent {
         return out;
     }
 
-    // Consecutive event stream failures; reset whenever an event arrives
-    property int eventsRestarts: 0
-    readonly property int maxEventsRestarts: 5
-    readonly property bool eventsActive: eventsProcess.running && eventsRestarts <= maxEventsRestarts
-
-    // Called after every successful fetch: the bridge is reachable, so a stream that gave up
-    // (eventsRestarts > max, e.g. laptop away from home) gets a fresh start
-    function startEvents() {
-        if (eventsProcess.running || eventsRestartTimer.running)
-            return;
-        if (eventsRestarts > maxEventsRestarts)
-            eventsRestarts = 0;
-        eventsProcess.running = true;
-    }
-
-    // Resource types shown by the widget; other events (sensors, connectivity, ...) don't refresh
-    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zigbee_connectivity"]
-
-    // Live updates from the bridge event stream (SSE): relevant events trigger a refresh,
-    // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
-    Process {
-        id: eventsProcess
-        command: ["curl", "-K", hueBridge.confPath, "-N", "-H", "Accept: text/event-stream", "--expand-url", "https://{{ip}}/eventstream/clip/v2"]
-        onExited: (exitCode, exitStatus) => {
-            // Unpaired: wait for a new pairing (HueBridge.configChanged) instead of retrying
-            if (!root.paired)
-                return;
-            if (++root.eventsRestarts > root.maxEventsRestarts) {
-                console.warn("Hue Director: event stream keeps failing - falling back to polling");
-                return;
-            }
-            eventsRestartTimer.restart();
-        }
-        stdout: SplitParser {
-            // SSE frames: "id: ...", "data: [...]", and ": hi" keepalives.
-            // Any line proves the stream works, keepalives included (quiet homes send no data for long)
-            onRead: line => {
-                if (!line.trim())
-                    return;
-                root.eventsRestarts = 0;
-                if (!line.startsWith("data:"))
-                    return;
-                let relevant = true;
-                try {
-                    relevant = JSON.parse(line.slice(5)).some(ev => (ev.data ?? []).some(r => root.watchedTypes.includes(r.type)));
-                } catch (e) {}
-                if (relevant)
-                    root.refresh();
-            }
-        }
-    }
-
-    Timer {
-        id: eventsRestartTimer
-        interval: 5000
-        onTriggered: eventsProcess.running = true
-    }
-
-    // Safety net while events are active, main source when they are not
-    Timer {
-        interval: root.eventsActive ? 300000 : 30000
-        running: root.surfaceLive
-        repeat: true
-        onTriggered: root.refresh()
-    }
-
     horizontalBarPill: Component {
         Row {
             spacing: Theme.spacingXS
@@ -449,7 +244,7 @@ PluginComponent {
             // (PairingPanel already says "Not paired"; certChanged shows its error here)
             detailsText: root.paired ? root.error : ""
             PairingPanel {
-                bridge: hueBridge
+                bridge: root.hue?.bridge ?? null
                 visible: root.needsPairing
             }
 
@@ -502,7 +297,7 @@ PluginComponent {
                                 visible: root.lightsOn > 0 && root.homeGroupedId !== ""
                                 iconName: "power_settings_new"
                                 tooltipText: I18n.trFor("hueDirector", "Turn off all lights")
-                                onClicked: root.setResource("grouped_light", root.homeGroupedId, { on: { on: false } })
+                                onClicked: root.hue.setResource("grouped_light", root.homeGroupedId, { on: { on: false } })
                             }
                         }
 
@@ -513,8 +308,8 @@ PluginComponent {
                             RoomCard {
                                 required property int index
                                 readonly property var room: root.rooms[index]
-                                readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
-                                readonly property int onCount: roomLights.filter(l => l.HueData?.on?.on).length
+                                readonly property var roomLights: root.roomLightsOf(room?.Id)
+                                readonly property int onCount: roomLights.filter(l => l.Reachable && l.HueData?.on?.on).length
                                 readonly property int unreachableCount: roomLights.filter(l => !l.Reachable).length
                                 readonly property string unreachableText: unreachableCount ? " · " + I18n.trFor("hueDirector", "%1 unreachable").arg(unreachableCount) : ""
 
@@ -526,8 +321,8 @@ PluginComponent {
                                 dimmable: !!room?.GroupedLight?.HueData?.dimming
                                 accentColor: root.rgbColor(root.averageRgb(roomLights))
                                 subtitle: (isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")) + unreachableText
-                                onToggleRequested: on => root.setRoom(room, { on: { on: on } })
-                                onBrightnessRequested: value => root.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
+                                onToggleRequested: on => root.hue.setRoom(room, { on: { on: on } })
+                                onBrightnessRequested: value => root.hue.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
                                 onClicked: root.openRoomId = room.Id
                             }
                         }
@@ -546,7 +341,7 @@ PluginComponent {
                         id: roomPage
 
                         readonly property var room: root.rooms.find(r => r.Id === root.openRoomId) ?? null
-                        readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
+                        readonly property var roomLights: root.roomLightsOf(room?.Id)
                         readonly property var scenes: room?.Scenes ?? []
                         readonly property var smartScenes: room?.SmartScenes ?? []
                         // A running smart scene drives the lights: no regular scene is marked meanwhile
@@ -610,7 +405,7 @@ PluginComponent {
                                 id: pageToggle
                                 anchors.verticalCenter: parent.verticalCenter
                                 checked: roomPage.room?.GroupedLight?.HueData?.on?.on ?? false
-                                onToggled: checked => root.setRoom(roomPage.room, { on: { on: checked } })
+                                onToggled: checked => root.hue.setRoom(roomPage.room, { on: { on: checked } })
                             }
                         }
 
@@ -645,7 +440,7 @@ PluginComponent {
                                     onActivated: {
                                         roomPage.pendingSceneId = scene.Id;
                                         pendingSceneTimeout.restart();
-                                        root.setResource("scene", scene.Id, { recall: { action: "active" } });
+                                        root.hue.setResource("scene", scene.Id, { recall: { action: "active" } });
                                     }
                                     onDynamicToggled: {
                                         roomPage.pendingSceneId = scene.Id;
@@ -655,7 +450,7 @@ PluginComponent {
                                         const speed = parseFloat(root.pluginData?.dynamicSpeed ?? "-1");
                                         if (!dynamicActive && speed >= 0)
                                             body.speed = speed;
-                                        root.setResource("scene", scene.Id, body);
+                                        root.hue.setResource("scene", scene.Id, body);
                                     }
                                 }
                             }
@@ -673,7 +468,7 @@ PluginComponent {
                                     colors: root.sceneColors(smartScene?.Current)
                                     smart: true
                                     active: smartScene?.HueData?.state === "active"
-                                    onActivated: root.setResource("smart_scene", smartScene.Id, { recall: { action: active ? "deactivate" : "activate" } })
+                                    onActivated: root.hue.setResource("smart_scene", smartScene.Id, { recall: { action: active ? "deactivate" : "activate" } })
                                 }
                             }
                         }
@@ -702,16 +497,18 @@ PluginComponent {
                                     icon: root.lightIcon(light?.Archetype)
                                     currentRgb: root.lightRgb(light)
                                     expanded: roomPage.expandedLightId === light?.Id
+                                    // The color picker may answer after the popout is gone: the daemon outlives it
                                     applyColor: {
                                         const lightId = light?.Id;
-                                        return c => root.setColor(lightId, c);
+                                        const hue = root.hue;
+                                        return c => hue?.setColor(lightId, c);
                                     }
                                     onExpandToggled: roomPage.expandedLightId = expanded ? "" : light.Id
-                                    onToggleRequested: on => root.setResource("light", light.Id, { on: { on: on } })
-                                    onBrightnessRequested: value => root.setResource("light", light.Id, { on: { on: true }, dimming: { brightness: value } })
-                                    onIdentifyRequested: root.identify(light)
-                                    onEffectRequested: value => root.setEffect(light, value)
-                                    onTemperatureRequested: mirek => root.setResource("light", light.Id, { on: { on: true }, color_temperature: { mirek: mirek } })
+                                    onToggleRequested: on => root.hue.setResource("light", light.Id, { on: { on: on } })
+                                    onBrightnessRequested: value => root.hue.setResource("light", light.Id, { on: { on: true }, dimming: { brightness: value } })
+                                    onIdentifyRequested: root.hue.identify(light)
+                                    onEffectRequested: value => root.hue.setEffect(light, value)
+                                    onTemperatureRequested: mirek => root.hue.setResource("light", light.Id, { on: { on: true }, color_temperature: { mirek: mirek } })
                                 }
                             }
                         }

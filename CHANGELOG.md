@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1
+
+- One connection to the bridge for the whole shell: state, event stream, polling and commands moved to the daemon, shared by every bar (multi-monitor) and by the settings page.
+- Unreachable lights no longer count as on (bar count, "lights on" summary, all-off button, room color, favorite toggle).
+- Quick commands on the same light (e.g. screen lock then suspend) no longer lose their confirmation, which could delay suspend by up to 5 seconds.
+- Partial bridge errors (HTTP 207) are reported instead of ignored.
+- Identify on a light that is off keeps its brightness for the next switch-on, and no longer refetches the whole state at every step.
+- IPC calls answer with the outcome (`ok`, `no scene named …`, `not paired`).
+- An offline bridge is logged once, not at every poll; the event stream restarts at once after a new pairing.
+
 ## 1.2.0
 
 - Identify: a button on each light pulses its brightness twice in 2.5 s, then restores it, to find it.

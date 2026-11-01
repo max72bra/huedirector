@@ -114,7 +114,7 @@ bind = SUPER, L, exec, dms ipc call hueDirector toggle
 bind = SUPER SHIFT, L, exec, dms ipc call hueDirector scene "Studio/Relax"
 ```
 
-Calls return at once; if a name is not found, the shell log says so.
+Each call answers `ok`, or says what is wrong (e.g. `no scene named Relax`, `not paired`).
 
 ## Uninstall
 

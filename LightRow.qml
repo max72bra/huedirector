@@ -244,17 +244,19 @@ DCard {
             }
         }
 
-        // Light effects (candle, fire, ...) and timed ones (sunrise, sunset)
-        DFilterChips {
+        // Light effects (candle, fire, ...) and timed ones (sunrise, sunset). DDropdown works with labels
+        DDropdown {
+            readonly property var effectLabels: row.effectValues.map(v => row.effectLabel(v))
+
             width: parent.width
             visible: row.expanded && row.effectValues.length > 0
-            showCounts: false
-            model: row.effectValues.map(v => ({ label: row.effectLabel(v), value: v }))
-            onSelectionChanged: index => row.effectRequested(row.effectValues[index])
-
-            // Chips assign currentIndex on click, which would break a plain binding
-            Binding on currentIndex {
-                value: Math.max(0, row.effectValues.indexOf(row.currentEffect))
+            text: I18n.trFor("hueDirector", "Effect")
+            options: effectLabels
+            currentValue: row.effectLabel(row.currentEffect)
+            onValueChanged: newValue => {
+                const i = effectLabels.indexOf(newValue);
+                if (i >= 0 && row.effectValues[i] !== row.currentEffect)
+                    row.effectRequested(row.effectValues[i]);
             }
         }
     }

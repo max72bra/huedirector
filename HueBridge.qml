@@ -18,22 +18,23 @@ Item {
     readonly property string confPath: stateDir + "/bridge.conf"
 
     property bool configured: false
-    // Per instance (widget, settings): Proc.runCommand debounces by id, so shared ids would drop the other instance's requests
-    readonly property string procPrefix: "hueDirector." + Math.random().toString(36).slice(2) + "."
+    // Single instance, in the daemon (HueEvents.qml); Proc.runCommand debounces by these ids
+    readonly property string procPrefix: "hueDirector.bridge."
     property string ip: ""
 
     // Bodies waiting for the Proc debounce, per resource id (see put())
     property var pendingBodies: ({})
-    // Callbacks waiting for the next fetch: the Proc debounce runs only the last call, so earlier callers
-    // (e.g. two quick IPC commands) are kept here and all answered with the same result
+    // Callbacks waiting for the next fetch / for a resource's PUT: the Proc debounce runs only the last
+    // call, so earlier callers (e.g. screen lock then suspend on the same light) are kept here and all answered
     property var fetchWaiters: []
+    property var putWaiters: ({})
     // Fade time for on/off and scene recalls in ms (Hue "dynamics"); -1 leaves the bridge default (about 0.4 s).
     // Sliders are not faded: a long fade would lag behind the drag
     property int transitionMs: -1
 
     signal configChanged
 
-    // Bumped by PairingPanel after a successful pairing: every instance (widget, settings) reloads
+    // Bumped by PairingPanel (popout or settings) after a successful pairing or a forget
     Connections {
         target: PluginService
         function onGlobalVarChanged(pluginId, varName) {
@@ -80,7 +81,7 @@ Item {
         + "rmdir \"$1\" 2>/dev/null\n"
         + "exit 0\n"
 
-    // Every instance reloads through pairingRevision, like after a pairing
+    // Reloads through pairingRevision, like after a pairing
     function forget(done) {
         Proc.runCommand(procPrefix + "forget", ["sh", "-c", forgetScript, "sh", stateDir], () => {
             PluginService.setGlobalVar("hueDirector", "pairingRevision", PluginService.getGlobalVar("hueDirector", "pairingRevision", 0) + 1);
@@ -132,6 +133,7 @@ Item {
         if (body.color_temperature)
             delete merged.color;
         pendingBodies[id] = merged;
+        (putWaiters[id] = putWaiters[id] ?? []).push(cb);
         const sent = Object.assign({}, merged);
         if (transitionMs >= 0) {
             // Smart scenes take only an action in recall
@@ -142,7 +144,16 @@ Item {
         }
         Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(sent), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
             delete pendingBodies[id];
-            cb(parseResponse(stdout, exitCode).error);
+            const waiters = putWaiters[id] ?? [];
+            delete putWaiters[id];
+            const error = parseResponse(stdout, exitCode).error;
+            for (const w of waiters) {
+                try {
+                    w?.(error);
+                } catch (e) {
+                    console.warn("Hue Director: put callback failed:", e);
+                }
+            }
         }, 300);
     }
 
@@ -167,6 +178,9 @@ Item {
             return { error: "unpaired" };
         if (status < 200 || status >= 300)
             return { error: body?.errors?.[0]?.description || I18n.trFor("hueDirector", "Bridge error (HTTP %1)").arg(status) };
+        // 207 and some 200 answers carry per-field errors (e.g. an effect the light doesn't support)
+        if (body?.errors?.length)
+            return { error: body.errors[0].description || I18n.trFor("hueDirector", "Bridge error (HTTP %1)").arg(status) };
         return { body: body, error: "" };
     }
 
@@ -242,14 +256,15 @@ Item {
         return { kind: kind, id: id };
     }
 
-    // Whether a target is on in a normalize() result. The home group counts as on when any light is on
+    // Whether a target is on in a normalize() result (or anything with rooms, lights, homeGroupedId).
+    // The home group counts as on when any reachable light is on: unreachable ones keep a stale state
     function targetIsOn(t, state) {
         if (t.kind === "light")
             return state.lights.find(l => l.Id === t.id)?.HueData?.on?.on ?? false;
         const room = state.rooms.find(r => r.GroupedLight?.HueData?.id === t.id);
         if (room)
             return room.GroupedLight.HueData.on?.on ?? false;
-        return t.id === state.homeGroupedId && state.lights.some(l => l.HueData?.on?.on);
+        return t.id === state.homeGroupedId && state.lights.some(l => l.Reachable && l.HueData?.on?.on);
     }
 
     // sRGB 0..1 -> CIE xy (Wide RGB D65 matrix from the Hue developer docs).

@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
@@ -9,9 +10,17 @@ PluginSettings {
     id: root
     pluginId: "hueDirector"
 
-    property var roomOptions: []
-    // Targets for the system event rules, values as read by HueEvents.rule()
-    property var targetOptions: []
+    // State lives in the daemon (HueEvents.qml): no requests of our own, the options follow live changes
+    readonly property var hue: PluginService.pluginDaemonInstances["hueDirector"] ?? null
+    readonly property var roomOptions: (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label))
+    // Targets for the system event rules and the favorite light, values as read by HueBridge.parseTarget()
+    readonly property var targetOptions: {
+        const byLabel = (a, b) => a.label.localeCompare(b.label);
+        const rooms = (hue?.rooms ?? []).filter(r => r.GroupedLight).map(r => ({ label: I18n.trFor("hueDirector", "Room · %1").arg(r.Name), value: "grouped_light:" + r.GroupedLight.HueData.id })).sort(byLabel);
+        const lights = (hue?.lights ?? []).map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
+        const home = hue?.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + hue.homeGroupedId }] : [];
+        return home.concat(rooms, lights);
+    }
     // Width of the on/off buttons column (two small icon buttons)
     readonly property int actionColumnWidth: 112
 
@@ -29,26 +38,6 @@ PluginSettings {
         { key: "shutdown", label: I18n.trFor("hueDirector", "Power off"), def: "off" }
     ]
 
-    function loadRooms() {
-        if (!hueBridge.configured)
-            return;
-        hueBridge.fetchAll((result, err) => {
-            if (err)
-                return;
-            const byLabel = (a, b) => a.label.localeCompare(b.label);
-            roomOptions = result.rooms.map(r => ({ label: r.Name, value: r.Id })).sort(byLabel);
-            const rooms = result.rooms.filter(r => r.GroupedLight).map(r => ({ label: I18n.trFor("hueDirector", "Room · %1").arg(r.Name), value: "grouped_light:" + r.GroupedLight.HueData.id })).sort(byLabel);
-            const lights = result.lights.map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
-            const home = result.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + result.homeGroupedId }] : [];
-            targetOptions = home.concat(rooms, lights);
-        });
-    }
-
-    HueBridge {
-        id: hueBridge
-        onConfigChanged: root.loadRooms()
-    }
-
     StyledText {
         text: I18n.trFor("hueDirector", "Hue Bridge")
         font.pixelSize: Theme.fontSizeLarge
@@ -56,9 +45,8 @@ PluginSettings {
         color: Theme.surfaceText
     }
 
-    // Pairing reloads the bridge config, which reloads the rooms through onConfigChanged
     PairingPanel {
-        bridge: hueBridge
+        bridge: root.hue?.bridge ?? null
     }
 
     SelectionSetting {
