@@ -1,0 +1,20 @@
+{
+    "$schema": "https://duxlabs.dev/schemas/plugin.json",
+    "id": "huedirector",
+    "name": "Hue Director",
+    "description": "A Dux Shell Philips Hue manager interface",
+    "version": "1.0.0",
+    "author": "maxb",
+    "type": "widget",
+    "capabilities": ["dankbar-widget"],
+    "component": "./huedirector.qml",
+    "settings": "./huedirectorsettings.qml",
+    "icon": "lightbulb",
+    "dependencies": ["openhue-cli"],
+    "requires_dms": ">=2.0.0",
+    "permissions": [
+        "settings_read",
+        "settings_write",
+        "process"
+    ]
+}
