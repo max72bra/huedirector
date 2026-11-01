@@ -11,16 +11,18 @@ PluginSettings {
     property var roomOptions: []
 
     function loadRooms() {
-        Proc.runCommand("hueDirector.settings.rooms", ["openhue", "get", "room", "--json"], (stdout, exitCode) => {
-            if (exitCode !== 0)
-                return;
-            try {
-                roomOptions = (JSON.parse(stdout) ?? []).map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label));
-            } catch (e) {}
+        if (!hueBridge.configured)
+            return;
+        hueBridge.fetchAll((result, err) => {
+            if (!err)
+                roomOptions = result.rooms.map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label));
         });
     }
 
-    Component.onCompleted: loadRooms()
+    HueBridge {
+        id: hueBridge
+        onConfigChanged: root.loadRooms()
+    }
 
     StyledText {
         text: I18n.trFor("hueDirector", "Hue Bridge")
@@ -29,8 +31,9 @@ PluginSettings {
         color: Theme.surfaceText
     }
 
+    // Pairing reloads the bridge config, which reloads the rooms through onConfigChanged
     PairingPanel {
-        onPaired: root.loadRooms()
+        bridge: hueBridge
     }
 
     SelectionSetting {

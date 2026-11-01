@@ -5,17 +5,19 @@ import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 
-// Pairs openhue with a Hue Bridge through `openhue setup`, in the popout (first time) and in settings (again)
+// Pairs with a Hue Bridge (HueBridge.pairScript), in the popout (first time) and in settings (again)
 Column {
     id: panel
 
+    // HueBridge instance of the host component
+    required property var bridge
+
     readonly property int timeoutSeconds: 90
-    // Same rule as openhue: $XDG_CONFIG_HOME/openhue if set, else ~/.openhue. Only the bridge line is read, never the key
-    readonly property string readBridgeScript: "d=\"${XDG_CONFIG_HOME:+$XDG_CONFIG_HOME/openhue}\"; sed -n 's/^bridge: *//p' \"${d:-$HOME/.openhue}/config.yaml\" 2>/dev/null"
     readonly property bool validIp: ipField.text === "" || /^((25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(25[0-5]|2[0-4]\d|1?\d?\d)$/.test(ipField.text)
 
-    property string bridgeIp: ""
+    readonly property string bridgeIp: bridge?.configured ? bridge.ip : ""
     property bool waiting: false
+    property bool succeeded: false
     property bool cancelled: false
     property int secondsLeft: 0
     property string lastError: ""
@@ -28,45 +30,51 @@ Column {
     width: parent.width
     spacing: Theme.spacingS
 
-    function readBridge() {
-        Proc.runCommand("hueDirector.pairing.bridge", ["sh", "-c", readBridgeScript], (stdout, exitCode) => bridgeIp = stdout.trim(), 0);
-    }
-
     function startPairing() {
         if (!validIp || waiting)
             return;
         lastError = "";
         cancelled = false;
+        succeeded = false;
         result = "";
         message = I18n.trFor("hueDirector", "Looking for the Hue Bridge…");
         secondsLeft = timeoutSeconds;
-        // timeout: openhue setup polls for the button forever
-        setup.command = ["timeout", String(timeoutSeconds), "openhue", "setup"].concat(ipField.text ? ["-b", ipField.text] : []);
+        // timeout: the script polls for the button until it is pressed
+        setup.command = ["timeout", String(timeoutSeconds), "sh", "-c", bridge.pairScript, "sh", bridge.stateDir, ipField.text];
         setup.running = true;
         waiting = true;
     }
-
-    Component.onCompleted: readBridge()
 
     Process {
         id: setup
 
         stdout: SplitParser {
+            // Status lines from HueBridge.pairScript
             onRead: line => {
-                if (line.indexOf("[KO]") !== -1)
-                    panel.lastError = line.replace(/^.*\[KO\]\s*/, "");
-                else if (line.indexOf("push the button") !== -1)
+                if (line.startsWith("IP "))
+                    panel.message = I18n.trFor("hueDirector", "Connecting to the bridge at %1…").arg(line.slice(3));
+                else if (line === "WAIT")
                     countdown.start();
+                else if (line === "OK")
+                    panel.succeeded = true;
+                else if (line === "ERR notfound")
+                    panel.lastError = I18n.trFor("hueDirector", "Hue Bridge not found: enter its IP address");
+                else if (line === "ERR unreachable")
+                    panel.lastError = I18n.trFor("hueDirector", "Hue Bridge not reachable at this address");
+                else if (line === "ERR notbridge")
+                    panel.lastError = I18n.trFor("hueDirector", "No Hue Bridge at this address");
+                else if (line.startsWith("ERR"))
+                    panel.lastError = line.slice(4) || I18n.trFor("hueDirector", "Pairing failed");
             }
         }
 
         onExited: (exitCode, exitStatus) => {
             countdown.stop();
             panel.waiting = false;
-            if (exitCode === 0 && !panel.lastError && !panel.cancelled) {
+            if (panel.succeeded && !panel.cancelled) {
                 panel.result = "success";
                 panel.message = I18n.trFor("hueDirector", "Paired with the Hue Bridge");
-                panel.readBridge();
+                panel.bridge.loadConfig();
                 PluginService.setGlobalVar("hueDirector", "pairingRevision", PluginService.getGlobalVar("hueDirector", "pairingRevision", 0) + 1);
                 panel.paired();
                 return;
@@ -79,7 +87,7 @@ Column {
             else if (panel.lastError)
                 panel.message = panel.lastError;
             else
-                panel.message = I18n.trFor("hueDirector", "Hue Bridge not found: enter its IP address");
+                panel.message = I18n.trFor("hueDirector", "Pairing failed (exit %1)").arg(exitCode);
         }
     }
 

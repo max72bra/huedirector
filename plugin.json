@@ -11,7 +11,7 @@
     "settings": "./HueDirectorSettings.qml",
     "startupCheck": "./StartupCheck.qml",
     "icon": "lightbulb",
-    "dependencies": ["openhue-cli"],
+    "dependencies": ["curl", "openssl"],
     "requires_dms": ">=2.0.0",
     "permissions": [
         "settings_read",

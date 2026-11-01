@@ -10,12 +10,12 @@ import "."
 PluginComponent {
     id: root
 
-    // Raw openhue JSON arrays
+    // Bridge data, in the shape built by HueBridge.normalize()
     property var rooms: []
     property var lights: []
     property string error: ""
     property bool loaded: false
-    // False when openhue reports no config; PairingPanel replaces the room list
+    // False when there is no pairing or the bridge rejects the key; PairingPanel replaces the room list
     property bool paired: true
 
     readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
@@ -67,64 +67,67 @@ PluginComponent {
         return [0, 1, 2].map(i => colors.reduce((sum, c) => sum + c[i], 0) / colors.length);
     }
 
-    // "#RRGGBB" for openhue --rgb; color.toString() can emit "#AARRGGBB"
-    function hex(c) {
-        return "#" + [c.r, c.g, c.b].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
-    }
-
     function rgbColor(rgb) {
         return rgb ? Qt.rgba(rgb[0], rgb[1], rgb[2], 1) : Theme.primary;
     }
 
-    // openhue prints this and exits 0 when it has no config
-    function isUnpaired(stdout) {
-        return stdout.indexOf("not configured yet") !== -1;
+    HueBridge {
+        id: hueBridge
+        onConfigChanged: root.refresh()
     }
 
-    function fetch(kind, apply) {
-        Proc.runCommand("hueDirector.get." + kind, ["openhue", "get", kind, "--json"], (stdout, exitCode) => {
-            if (exitCode !== 0) {
-                error = I18n.trFor("hueDirector", "openhue failed (exit %1)").arg(exitCode);
-                return;
-            }
-            if (isUnpaired(stdout)) {
+    function refresh() {
+        if (!hueBridge.configured) {
+            paired = false;
+            return;
+        }
+        hueBridge.fetchAll((result, err) => {
+            if (err === "unpaired") {
                 paired = false;
                 error = "";
                 return;
             }
-            try {
-                apply(JSON.parse(stdout) ?? []);
-                error = "";
-                loaded = true;
-                paired = true;
-            } catch (e) {
-                error = I18n.trFor("hueDirector", "Invalid openhue output");
-            }
-        }, 200);
-    }
-
-    function refresh() {
-        // Bridge order is not stable (scenes move after activation): sort everything by name
-        const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
-        fetch("room", data => {
-            data.forEach(r => (r.Scenes ?? []).sort(byName));
-            rooms = data.sort(byName);
-        });
-        fetch("light", data => lights = data.sort(byName));
-    }
-
-    // kind: "room" | "light". Proc debounce (300ms per resource) collapses slider drags into one call
-    function setResource(kind, id, args) {
-        Proc.runCommand("hueDirector.set." + kind + "." + id, ["openhue", "set", kind, id].concat(args), (stdout, exitCode) => {
-            if (exitCode !== 0) {
-                error = I18n.trFor("hueDirector", "openhue failed (exit %1)").arg(exitCode);
+            if (err) {
+                error = err;
                 return;
             }
-            refresh();
-        }, 300);
+            // Bridge order is not stable (scenes move after activation): sort everything by name
+            const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
+            result.rooms.forEach(r => r.Scenes.sort(byName));
+            rooms = result.rooms.sort(byName);
+            lights = result.lights.sort(byName);
+            error = "";
+            loaded = true;
+            paired = true;
+            startEvents();
+        });
     }
 
-    Component.onCompleted: refresh()
+    // kind: "light" | "grouped_light" | "scene", body: Hue API v2 PUT body
+    function setResource(kind, id, body) {
+        hueBridge.put(kind, id, body, err => {
+            if (err === "unpaired")
+                paired = false;
+            else if (err)
+                error = err;
+            else
+                refresh();
+        });
+    }
+
+    // Rooms are controlled through their grouped_light service
+    function setRoom(room, body) {
+        const groupedId = room?.GroupedLight?.HueData?.id;
+        if (groupedId)
+            setResource("grouped_light", groupedId, body);
+    }
+
+    function setColor(lightId, c) {
+        const xy = hueBridge.rgbToXy(c);
+        if (xy)
+            setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
+    }
+
     onInteractionActiveChanged: if (interactionActive) refresh()
 
     // Consecutive event stream failures; reset whenever an event arrives
@@ -132,12 +135,16 @@ PluginComponent {
     readonly property int maxEventsRestarts: 5
     readonly property bool eventsActive: eventsProcess.running && eventsRestarts <= maxEventsRestarts
 
-    // Live updates (openhue events are alpha): any event triggers a refresh,
-    // Proc debounce in fetch() collapses bursts into one call
+    function startEvents() {
+        if (!eventsProcess.running && !eventsRestartTimer.running && eventsRestarts <= maxEventsRestarts)
+            eventsProcess.running = true;
+    }
+
+    // Live updates from the bridge event stream (SSE): any event triggers a refresh,
+    // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
     Process {
         id: eventsProcess
-        running: true
-        command: ["openhue", "get", "events"]
+        command: ["curl", "-K", hueBridge.confPath, "-N", "-H", "Accept: text/event-stream", "--expand-url", "https://{{ip}}/eventstream/clip/v2"]
         onExited: (exitCode, exitStatus) => {
             // Unpaired: wait for pairingRevision instead of retrying
             if (!root.paired)
@@ -149,13 +156,10 @@ PluginComponent {
             eventsRestartTimer.restart();
         }
         stdout: SplitParser {
+            // SSE frames: "id: ...", "data: [...]", and ": hi" keepalives
             onRead: line => {
-                if (!line.trim())
+                if (!line.startsWith("data:"))
                     return;
-                if (root.isUnpaired(line)) {
-                    root.paired = false;
-                    return;
-                }
                 root.eventsRestarts = 0;
                 root.refresh();
             }
@@ -174,12 +178,10 @@ PluginComponent {
         function onGlobalVarChanged(pluginId, varName) {
             if (pluginId !== "hueDirector" || varName !== "pairingRevision")
                 return;
-            root.paired = true;
             root.eventsRestarts = 0;
-            // Reconnect with the new key/bridge
+            // Reconnect with the new key/bridge; loadConfig() triggers refresh(), which restarts events
             eventsProcess.running = false;
-            eventsRestartTimer.restart();
-            root.refresh();
+            hueBridge.loadConfig();
         }
     }
 
@@ -241,6 +243,7 @@ PluginComponent {
 
             // PairingPanel already says "Not paired", so detailsText stays empty
             PairingPanel {
+                bridge: hueBridge
                 visible: !root.paired
             }
 
@@ -292,8 +295,8 @@ PluginComponent {
                                 brightness: Math.round(roomItem.room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
                                 dimmable: !!roomItem.room?.GroupedLight?.HueData?.dimming
                                 expandable: roomItem.roomLights.length > 0 || roomItem.scenes.length > 0
-                                onToggleRequested: on => root.setResource("room", roomItem.room.Id, [on ? "--on" : "--off"])
-                                onBrightnessRequested: value => root.setResource("room", roomItem.room.Id, ["--on", "--brightness", String(value)])
+                                onToggleRequested: on => root.setRoom(roomItem.room, { on: { on: on } })
+                                onBrightnessRequested: value => root.setRoom(roomItem.room, { on: { on: true }, dimming: { brightness: value } })
                             }
 
                             DFilterChips {
@@ -305,7 +308,7 @@ PluginComponent {
                                 onSelectionChanged: index => {
                                     roomItem.pendingSceneId = roomItem.scenes[index].Id;
                                     pendingSceneTimeout.restart();
-                                    root.setResource("scene", roomItem.pendingSceneId, []);
+                                    root.setResource("scene", roomItem.pendingSceneId, { recall: { action: "active" } });
                                 }
 
                                 // Chips assign currentIndex on click, which would break a plain binding
@@ -338,8 +341,8 @@ PluginComponent {
                                         brightness: Math.round(lightItem.light?.HueData?.dimming?.brightness ?? 0)
                                         dimmable: !!lightItem.light?.HueData?.dimming
                                         expandable: lightItem.hasColor || !!lightItem.colorTemp
-                                        onToggleRequested: on => root.setResource("light", lightItem.light.Id, [on ? "--on" : "--off"])
-                                        onBrightnessRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--brightness", String(value)])
+                                        onToggleRequested: on => root.setResource("light", lightItem.light.Id, { on: { on: on } })
+                                        onBrightnessRequested: value => root.setResource("light", lightItem.light.Id, { on: { on: true }, dimming: { brightness: value } })
                                     }
 
                                     // Color temperature in Kelvin (bridge uses mirek = 1e6 / K)
@@ -357,7 +360,7 @@ PluginComponent {
                                         tolerance: 100
                                         fillColor: lightControl.visibleAccent
                                         fillTextColor: lightControl.accentTextColor
-                                        onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--temperature", String(Math.round(1e6 / value))])
+                                        onRequested: value => root.setResource("light", lightItem.light.Id, { on: { on: true }, color_temperature: { mirek: Math.round(1e6 / value) } })
                                     }
 
                                     // Swatch takes the slot of the end icon of the sliders above (DSlider SideIcon: iconSize wide, spacingM gap)
@@ -385,7 +388,7 @@ PluginComponent {
                                             reported: knownHue
                                             // xy <-> RGB round trips drift a few degrees
                                             tolerance: 5
-                                            onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--rgb", root.hex(Qt.hsva(value / 360, 1, 1, 1))])
+                                            onRequested: value => root.setColor(lightItem.light.Id, Qt.hsva(value / 360, 1, 1, 1))
 
                                             // Same rainbow track as the shell color picker (Modules/ColorPicker/ColorPickerContent.qml)
                                             trackGradient: Gradient {
@@ -415,7 +418,7 @@ PluginComponent {
                                                 const lightId = lightItem.light.Id;
                                                 picker.selectedColor = lightItem.accentColor;
                                                 picker.pickerTitle = lightItem.light.Name;
-                                                picker.onColorSelectedCallback = c => root.setResource("light", lightId, ["--on", "--rgb", root.hex(c)]);
+                                                picker.onColorSelectedCallback = c => root.setColor(lightId, c);
                                                 picker.show();
                                             }
                                         }
