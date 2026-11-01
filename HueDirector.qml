@@ -19,8 +19,13 @@ PluginComponent {
     readonly property var colorPresets: ["#FF0000", "#FF8000", "#FFD000", "#00FF00", "#00FFFF", "#0000FF", "#8000FF", "#FF00A0"]
 
     readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
-    readonly property string pillIcon: error ? "error" : (lightsOn > 0 ? "lightbulb" : "light_off")
-    readonly property color pillColor: error ? Theme.error : (lightsOn > 0 ? Theme.primary : Theme.surfaceText)
+
+    // Pill shows the favorite room only; "all" or a removed room falls back to the whole home
+    readonly property string favoriteRoomId: pluginData?.favoriteRoom ?? ""
+    readonly property bool hasFavorite: rooms.some(r => r.Id === favoriteRoomId)
+    readonly property int pillLightsOn: hasFavorite ? lights.filter(l => l.Parent?.Parent?.Id === favoriteRoomId && l.HueData?.on?.on).length : lightsOn
+    readonly property string pillIcon: error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
+    readonly property color pillColor: error ? Theme.error : (pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
     function fetch(kind, apply) {
         Proc.runCommand("hueDirector.get." + kind, ["openhue", "get", kind, "--json"], (stdout, exitCode) => {
@@ -115,8 +120,8 @@ PluginComponent {
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.lightsOn > 0
-                text: root.lightsOn
+                visible: root.pillLightsOn > 0
+                text: root.pillLightsOn
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall
             }
@@ -136,8 +141,8 @@ PluginComponent {
 
             StyledText {
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible: root.lightsOn > 0
-                text: root.lightsOn
+                visible: root.pillLightsOn > 0
+                text: root.pillLightsOn
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall
             }

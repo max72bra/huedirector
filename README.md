@@ -33,7 +33,7 @@ Manual install: clone this repository into `~/.config/dms/plugins/hueDirector`, 
 
 ## Settings
 
-No settings yet.
+- **Favorite room**: room shown in the bar pill (icon and number of lights on). Default: all rooms.
 
 ## License
 
