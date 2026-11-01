@@ -29,7 +29,7 @@ All bridge communication goes through the `openhue` command; the plugin talks on
 3. Browse for `Hue Director` 3rd party plugin
 4. Install and enable it
 
-Manual install: clone this repository into `~/.config/dms/plugins/huedirector`, then scan for plugins and enable it.
+Manual install: clone this repository into `~/.config/dms/plugins/hueDirector`, then scan for plugins and enable it.
 
 ## Settings
 

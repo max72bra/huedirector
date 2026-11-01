@@ -3,6 +3,7 @@ import qs.Common
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
+import "."
 
 PluginComponent {
     id: root
@@ -18,9 +19,9 @@ PluginComponent {
     readonly property color pillColor: error ? Theme.error : (lightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
     function fetch(kind, apply) {
-        Proc.runCommand("huedirector.get." + kind, ["openhue", "get", kind, "--json"], (stdout, exitCode) => {
+        Proc.runCommand("hueDirector.get." + kind, ["openhue", "get", kind, "--json"], (stdout, exitCode) => {
             if (exitCode !== 0) {
-                error = I18n.trFor("huedirector", "openhue failed (exit %1)").arg(exitCode);
+                error = I18n.trFor("hueDirector", "openhue failed (exit %1)").arg(exitCode);
                 return;
             }
             try {
@@ -28,7 +29,7 @@ PluginComponent {
                 error = "";
                 loaded = true;
             } catch (e) {
-                error = I18n.trFor("huedirector", "Invalid openhue output");
+                error = I18n.trFor("hueDirector", "Invalid openhue output");
             }
         }, 200);
     }
@@ -38,11 +39,11 @@ PluginComponent {
         fetch("light", data => lights = data);
     }
 
-    // Proc debounce (300ms per room) collapses slider drags into one call
-    function setRoom(roomId, args) {
-        Proc.runCommand("huedirector.set.room." + roomId, ["openhue", "set", "room", roomId].concat(args), (stdout, exitCode) => {
+    // kind: "room" | "light". Proc debounce (300ms per resource) collapses slider drags into one call
+    function setResource(kind, id, args) {
+        Proc.runCommand("hueDirector.set." + kind + "." + id, ["openhue", "set", kind, id].concat(args), (stdout, exitCode) => {
             if (exitCode !== 0) {
-                error = I18n.trFor("huedirector", "openhue failed (exit %1)").arg(exitCode);
+                error = I18n.trFor("hueDirector", "openhue failed (exit %1)").arg(exitCode);
                 return;
             }
             refresh();
@@ -103,62 +104,63 @@ PluginComponent {
 
     popoutContent: Component {
         PopoutComponent {
+            id: popout
             headerText: "Hue Director"
-            detailsText: root.error || (root.loaded ? I18n.trFor("huedirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("huedirector", "Loading…"))
+            detailsText: root.error || (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…"))
 
-            Column {
+            DFlickable {
                 width: parent.width
-                spacing: Theme.spacingM
+                height: root.popoutHeight - popout.headerHeight - popout.detailsHeight - Theme.spacingL * 2
+                contentWidth: width
+                contentHeight: roomList.implicitHeight
+                clip: true
 
-                Repeater {
-                    // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
-                    model: root.rooms.length
+                Column {
+                    id: roomList
+                    width: parent.width
+                    spacing: Theme.spacingM
 
-                    Column {
-                        id: roomRow
-                        required property int index
-                        readonly property var room: root.rooms[index]
-                        readonly property bool isOn: room?.GroupedLight?.HueData?.on?.on ?? false
-                        readonly property int brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
-                        // Requested value held until the bridge reports it, so stale or mid-transition refreshes don't move the slider
-                        property int pendingBrightness: -1
+                    Repeater {
+                        // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
+                        model: root.rooms.length
 
-                        onBrightnessChanged: if (Math.abs(brightness - pendingBrightness) <= 1) pendingBrightness = -1
+                        Column {
+                            id: roomItem
+                            required property int index
+                            readonly property var room: root.rooms[index]
+                            readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
 
-                        width: parent.width
-                        spacing: Theme.spacingXS
-
-                        Timer {
-                            id: pendingTimeout
-                            interval: 3000
-                            onTriggered: roomRow.pendingBrightness = -1
-                        }
-
-                        DToggle {
                             width: parent.width
-                            text: roomRow.room?.Name ?? ""
-                            checked: roomRow.isOn
-                            onToggled: checked => root.setRoom(roomRow.room.Id, [checked ? "--on" : "--off"])
-                        }
+                            spacing: Theme.spacingXS
 
-                        DSlider {
-                            id: slider
-                            width: parent.width
-                            minimum: 1
-                            maximum: 100
-                            unit: "%"
-                            startIcon: "brightness_low"
-                            endIcon: "brightness_high"
-                            onSliderValueChanged: newValue => {
-                                roomRow.pendingBrightness = newValue;
-                                pendingTimeout.restart();
-                                root.setRoom(roomRow.room.Id, ["--on", "--brightness", String(newValue)]);
+                            ControlRow {
+                                id: roomControl
+                                width: parent.width
+                                name: roomItem.room?.Name ?? ""
+                                isOn: roomItem.room?.GroupedLight?.HueData?.on?.on ?? false
+                                brightness: Math.round(roomItem.room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
+                                dimmable: !!roomItem.room?.GroupedLight?.HueData?.dimming
+                                expandable: roomItem.roomLights.length > 0
+                                onToggleRequested: on => root.setResource("room", roomItem.room.Id, [on ? "--on" : "--off"])
+                                onBrightnessRequested: value => root.setResource("room", roomItem.room.Id, ["--on", "--brightness", String(value)])
                             }
 
-                            // DSlider assigns value on drag, which would break a plain binding
-                            Binding on value {
-                                when: !slider.isDragging && roomRow.pendingBrightness < 0
-                                value: roomRow.brightness
+                            Repeater {
+                                model: roomControl.expanded ? roomItem.roomLights.length : 0
+
+                                ControlRow {
+                                    required property int index
+                                    readonly property var light: roomItem.roomLights[index]
+
+                                    x: Theme.spacingL
+                                    width: roomItem.width - x
+                                    name: light?.Name ?? ""
+                                    isOn: light?.HueData?.on?.on ?? false
+                                    brightness: Math.round(light?.HueData?.dimming?.brightness ?? 0)
+                                    dimmable: !!light?.HueData?.dimming
+                                    onToggleRequested: on => root.setResource("light", light.Id, [on ? "--on" : "--off"])
+                                    onBrightnessRequested: value => root.setResource("light", light.Id, ["--on", "--brightness", String(value)])
+                                }
                             }
                         }
                     }
@@ -167,6 +169,6 @@ PluginComponent {
         }
     }
 
-    popoutWidth: 360
-    popoutHeight: 400
+    popoutWidth: 380
+    popoutHeight: 480
 }

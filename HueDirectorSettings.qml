@@ -5,6 +5,6 @@ import qs.Modules.Plugins
 
 PluginSettings {
     id: root
-    pluginId: "huedirector"
+    pluginId: "hueDirector"
 
 }
