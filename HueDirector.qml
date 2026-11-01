@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Io
 import qs.Common
+import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
@@ -14,6 +15,8 @@ PluginComponent {
     property var lights: []
     property string error: ""
     property bool loaded: false
+    // False when openhue reports no config; PairingPanel replaces the room list
+    property bool paired: true
 
     // Red, orange, yellow, green, cyan, blue, purple, pink
     readonly property var colorPresets: ["#FF0000", "#FF8000", "#FFD000", "#00FF00", "#00FFFF", "#0000FF", "#8000FF", "#FF00A0"]
@@ -24,8 +27,13 @@ PluginComponent {
     readonly property string favoriteRoomId: pluginData?.favoriteRoom ?? ""
     readonly property bool hasFavorite: rooms.some(r => r.Id === favoriteRoomId)
     readonly property int pillLightsOn: hasFavorite ? lights.filter(l => l.Parent?.Parent?.Id === favoriteRoomId && l.HueData?.on?.on).length : lightsOn
-    readonly property string pillIcon: error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
-    readonly property color pillColor: error ? Theme.error : (pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
+    readonly property string pillIcon: !paired ? "link_off" : error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
+    readonly property color pillColor: paired && error ? Theme.error : (paired && pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
+
+    // openhue prints this and exits 0 when it has no config
+    function isUnpaired(stdout) {
+        return stdout.indexOf("not configured yet") !== -1;
+    }
 
     function fetch(kind, apply) {
         Proc.runCommand("hueDirector.get." + kind, ["openhue", "get", kind, "--json"], (stdout, exitCode) => {
@@ -33,10 +41,16 @@ PluginComponent {
                 error = I18n.trFor("hueDirector", "openhue failed (exit %1)").arg(exitCode);
                 return;
             }
+            if (isUnpaired(stdout)) {
+                paired = false;
+                error = "";
+                return;
+            }
             try {
                 apply(JSON.parse(stdout) ?? []);
                 error = "";
                 loaded = true;
+                paired = true;
             } catch (e) {
                 error = I18n.trFor("hueDirector", "Invalid openhue output");
             }
@@ -79,6 +93,9 @@ PluginComponent {
         running: true
         command: ["openhue", "get", "events"]
         onExited: (exitCode, exitStatus) => {
+            // Unpaired: wait for pairingRevision instead of retrying
+            if (!root.paired)
+                return;
             if (++root.eventsRestarts > root.maxEventsRestarts) {
                 console.warn("Hue Director: event stream keeps failing - falling back to polling");
                 return;
@@ -87,6 +104,12 @@ PluginComponent {
         }
         stdout: SplitParser {
             onRead: line => {
+                if (!line.trim())
+                    return;
+                if (root.isUnpaired(line)) {
+                    root.paired = false;
+                    return;
+                }
                 root.eventsRestarts = 0;
                 root.refresh();
             }
@@ -97,6 +120,21 @@ PluginComponent {
         id: eventsRestartTimer
         interval: 5000
         onTriggered: eventsProcess.running = true
+    }
+
+    // Bumped by PairingPanel (popout or settings) after a successful pairing
+    Connections {
+        target: PluginService
+        function onGlobalVarChanged(pluginId, varName) {
+            if (pluginId !== "hueDirector" || varName !== "pairingRevision")
+                return;
+            root.paired = true;
+            root.eventsRestarts = 0;
+            // Reconnect with the new key/bridge
+            eventsProcess.running = false;
+            eventsRestartTimer.restart();
+            root.refresh();
+        }
     }
 
     // Safety net while events are active, main source when they are not
@@ -153,9 +191,15 @@ PluginComponent {
         PopoutComponent {
             id: popout
             headerText: "Hue Director"
-            detailsText: root.error || (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…"))
+            detailsText: !root.paired ? "" : root.error || (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…"))
+
+            // PairingPanel already says "Not paired", so detailsText stays empty
+            PairingPanel {
+                visible: !root.paired
+            }
 
             DFlickable {
+                visible: root.paired
                 width: parent.width
                 height: root.popoutHeight - popout.headerHeight - popout.detailsHeight - Theme.spacingL * 2
                 contentWidth: width

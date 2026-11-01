@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
+import "."
 
 PluginSettings {
     id: root
@@ -9,13 +10,28 @@ PluginSettings {
 
     property var roomOptions: []
 
-    Component.onCompleted: Proc.runCommand("hueDirector.settings.rooms", ["openhue", "get", "room", "--json"], (stdout, exitCode) => {
-        if (exitCode !== 0)
-            return;
-        try {
-            roomOptions = (JSON.parse(stdout) ?? []).map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label));
-        } catch (e) {}
-    })
+    function loadRooms() {
+        Proc.runCommand("hueDirector.settings.rooms", ["openhue", "get", "room", "--json"], (stdout, exitCode) => {
+            if (exitCode !== 0)
+                return;
+            try {
+                roomOptions = (JSON.parse(stdout) ?? []).map(r => ({ label: r.Name, value: r.Id })).sort((a, b) => a.label.localeCompare(b.label));
+            } catch (e) {}
+        });
+    }
+
+    Component.onCompleted: loadRooms()
+
+    StyledText {
+        text: I18n.trFor("hueDirector", "Hue Bridge")
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Font.Medium
+        color: Theme.surfaceText
+    }
+
+    PairingPanel {
+        onPaired: root.loadRooms()
+    }
 
     SelectionSetting {
         settingKey: "favoriteRoom"

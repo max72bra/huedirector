@@ -24,9 +24,9 @@ All bridge communication goes through the `openhue` command; the plugin talks on
 ## Requirements
 
 - `openhue-cli`
-- A Hue Bridge paired with openhue: run `openhue setup` once (the configuration is saved in `~/.openhue/config.yaml`)
+- A Philips Hue Bridge on the same local network
 
-The plugin checks both when it is enabled. If one is missing, it is not activated and the shell shows what to do.
+The plugin checks that `openhue` is installed when it is enabled. If it is missing, the plugin is not activated and the shell shows what to do.
 
 ## Installation
 
@@ -37,8 +37,37 @@ The plugin checks both when it is enabled. If one is missing, it is not activate
 
 Manual install: clone this repository into `~/.config/dms/plugins/hueDirector`, then scan for plugins and enable it.
 
+## Pairing with the Hue Bridge
+
+The plugin needs to be paired with your Hue Bridge once. Keep the bridge within reach: you will have 90 seconds to press its button.
+
+### First time
+
+1. Add the Hue Director widget to the bar. While it is not paired, it shows a broken-link icon.
+2. Click the widget to open it, then click **Pair**.
+3. When the widget asks you to, press the round button on top of the Hue Bridge.
+4. The widget shows "Paired with the Hue Bridge" and loads your rooms.
+
+### Pairing again
+
+Pair again if you reset or replaced the bridge, or if its IP address changed:
+
+1. Open DMS Settings → Plugins → Hue Director.
+2. Under **Hue Bridge**, click **Pair again** and press the bridge button.
+
+The current pairing is replaced only if the new one succeeds. If you cancel, or the button is not pressed in time, nothing changes.
+
+### If the bridge is not found
+
+The plugin looks for the bridge on your network automatically. If it can't find it, enter the bridge IP address in the **Bridge IP address** field before clicking Pair. The Hue app shows it under Settings → Bridges.
+
+### From a terminal
+
+Run `openhue setup`, or `openhue setup -b <bridge IP>`, then press the bridge button. The configuration is saved in `$XDG_CONFIG_HOME/openhue/config.yaml`, or in `~/.openhue/config.yaml` when `XDG_CONFIG_HOME` is not set.
+
 ## Settings
 
+- **Hue Bridge**: shows the paired bridge and lets you pair again.
 - **Favorite room**: room shown in the bar pill (icon and number of lights on). Default: all rooms.
 
 ## License
