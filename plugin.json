@@ -5,13 +5,22 @@
     "description": "A Dux Shell Philips Hue manager interface",
     "version": "1.0.0",
     "author": "maxb",
-    "type": "widget",
-    "capabilities": ["dankbar-widget"],
-    "component": "./HueDirector.qml",
+    "type": "composite",
+    "capabilities": [
+        "daemon",
+        "dankbar-widget"
+    ],
+    "components": {
+        "daemon": "./HueEvents.qml",
+        "widget": "./HueDirector.qml"
+    },
     "settings": "./HueDirectorSettings.qml",
     "startupCheck": "./StartupCheck.qml",
     "icon": "lightbulb",
-    "dependencies": ["curl", "openssl"],
+    "dependencies": [
+        "curl",
+        "openssl"
+    ],
     "requires_dms": ">=2.0.0",
     "permissions": [
         "settings_read",

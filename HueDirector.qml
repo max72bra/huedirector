@@ -142,6 +142,28 @@ PluginComponent {
             setResource("grouped_light", groupedId, body);
     }
 
+    // Right click on the pill toggles the favorite light, room or whole home (settings: favoriteLight)
+    pillRightClickAction: () => toggleFavorite()
+
+    function toggleFavorite() {
+        const target = pluginData?.favoriteLight ?? "";
+        const sep = target.indexOf(":");
+        if (sep < 0)
+            return;
+        const kind = target.slice(0, sep);
+        const id = target.slice(sep + 1);
+        let isOn = false;
+        if (kind === "light") {
+            isOn = lights.find(l => l.Id === id)?.HueData?.on?.on ?? false;
+        } else if (kind === "grouped_light") {
+            const room = rooms.find(r => r.GroupedLight?.HueData?.id === id);
+            isOn = room ? (room.GroupedLight.HueData.on?.on ?? false) : (id === homeGroupedId && lightsOn > 0);
+        } else {
+            return;
+        }
+        setResource(kind, id, { on: { on: !isOn } });
+    }
+
     function setColor(lightId, c) {
         const xy = hueBridge.rgbToXy(c);
         if (xy)
@@ -359,7 +381,7 @@ PluginComponent {
 
                         Item {
                             width: parent.width
-                            height: allOffButton.height
+                            height: settingsButton.height
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -367,6 +389,17 @@ PluginComponent {
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: Font.Medium
                                 color: Theme.surfaceVariantText
+                            }
+
+                            DIconButton {
+                                id: settingsButton
+                                anchors.right: allOffButton.visible ? allOffButton.left : parent.right
+                                iconName: "settings"
+                                tooltipText: I18n.trFor("hueDirector", "Settings and automations")
+                                onClicked: {
+                                    PopoutService.openSettingsWithTab("plugin:hueDirector");
+                                    popout.closePopout?.();
+                                }
                             }
 
                             DIconButton {
