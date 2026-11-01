@@ -91,6 +91,23 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 - **Favorite light**: a light, a room or all lights. Right-click the bar icon to turn it on or off.
 - **System events**: the automations described above.
 
+## Uninstall
+
+1. Open Settings → Plugins → Hue Director and click **Forget bridge** twice. This removes the pairing key, the logout action and the `hue-director-session` user service from this computer.
+2. Disable and uninstall the plugin in Settings → Plugins.
+
+If the plugin is already gone, remove the leftovers by hand:
+
+```sh
+rm -f ~/.local/state/dms/plugins/hueDirector/logout.action
+systemctl --user stop hue-director-session
+rm -rf ~/.local/state/dms/plugins/hueDirector
+```
+
+Remove `logout.action` before stopping the service: stopping it runs the logout action.
+
+The bridge may still list Hue Director among its connected apps.
+
 ## Translations
 
 The interface is in English and follows the Dux Shell language (Settings → Locale). Available translations: French, German, Italian, Japanese, Korean, Simplified Chinese and Spanish (`translations/`). They were machine-assisted: corrections from native speakers are welcome.

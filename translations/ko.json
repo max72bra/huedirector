@@ -199,5 +199,14 @@
     },
     "Number next to the bar icon; when off, only the icon shows the state": {
         "Number next to the bar icon; when off, only the icon shows the state": "바 아이콘 옆의 숫자입니다. 끄면 아이콘으로만 상태를 표시합니다"
+    },
+    "Forget bridge": {
+        "Forget bridge": "Bridge 삭제"
+    },
+    "Click again to confirm": {
+        "Click again to confirm": "다시 클릭하여 확인"
+    },
+    "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
+        "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "이 컴퓨터에서 Bridge를 삭제했습니다. Bridge 자체의 연결된 앱 목록에는 Hue Director가 계속 표시될 수 있습니다."
     }
 }

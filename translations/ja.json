@@ -199,5 +199,14 @@
     },
     "Number next to the bar icon; when off, only the icon shows the state": {
         "Number next to the bar icon; when off, only the icon shows the state": "バーのアイコン横の数字。オフにするとアイコンだけで状態を表示します"
+    },
+    "Forget bridge": {
+        "Forget bridge": "Bridge を削除"
+    },
+    "Click again to confirm": {
+        "Click again to confirm": "もう一度クリックして確定"
+    },
+    "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
+        "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "このコンピューターから Bridge を削除しました。Bridge 側の接続済みアプリ一覧には Hue Director が残る場合があります。"
     }
 }

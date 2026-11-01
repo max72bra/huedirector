@@ -199,5 +199,14 @@
     },
     "Number next to the bar icon; when off, only the icon shows the state": {
         "Number next to the bar icon; when off, only the icon shows the state": "栏图标旁的数字；关闭后仅由图标显示状态"
+    },
+    "Forget bridge": {
+        "Forget bridge": "忘记 Bridge"
+    },
+    "Click again to confirm": {
+        "Click again to confirm": "再次点击以确认"
+    },
+    "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
+        "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "已在此电脑上忘记 Bridge。Bridge 本身可能仍会在已连接的应用中列出 Hue Director。"
     }
 }

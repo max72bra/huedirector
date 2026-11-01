@@ -66,6 +66,22 @@ Item {
         + "done\n"
         + "write_conf \"$1\" \"$ip\" \"$key\" \"$pin\" && echo OK\n"
 
+    // $1 = state dir. Removes everything the plugin leaves on this machine. logout.action goes first:
+    // stopping the unit runs its ExecStop, which then finds no action and does nothing
+    readonly property string forgetScript: "rm -f \"$1/logout.action\"\n"
+        + "systemctl --user stop hue-director-session 2>/dev/null\n"
+        + "rm -f \"$1/bridge.conf\" \"$1/logout-hook.sh\"\n"
+        + "rmdir \"$1\" 2>/dev/null\n"
+        + "exit 0\n"
+
+    // Every instance reloads through pairingRevision, like after a pairing
+    function forget(done) {
+        Proc.runCommand(procPrefix + "forget", ["sh", "-c", forgetScript, "sh", stateDir], () => {
+            PluginService.setGlobalVar("hueDirector", "pairingRevision", PluginService.getGlobalVar("hueDirector", "pairingRevision", 0) + 1);
+            done?.();
+        }, 0);
+    }
+
     function curlArgs(path) {
         // path is relative to /clip/v2/, e.g. "resource" or "resource/light/<id>"
         return ["curl", "-K", confPath, "--expand-url", "https://{{ip}}/clip/v2/" + path];

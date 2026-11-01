@@ -199,5 +199,14 @@
     },
     "Number next to the bar icon; when off, only the icon shows the state": {
         "Number next to the bar icon; when off, only the icon shows the state": "Numero accanto all'icona nella barra; se disattivato, lo stato è indicato solo dall'icona"
+    },
+    "Forget bridge": {
+        "Forget bridge": "Dimentica bridge"
+    },
+    "Click again to confirm": {
+        "Click again to confirm": "Fai clic di nuovo per confermare"
+    },
+    "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
+        "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "Bridge dimenticato su questo computer. Il bridge potrebbe comunque elencare ancora Hue Director tra le app collegate."
     }
 }

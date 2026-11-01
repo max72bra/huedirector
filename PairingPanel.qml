@@ -147,6 +147,36 @@ Column {
                 setup.running = false;
             }
         }
+
+        // Two clicks: forgetting means pairing again with the bridge button
+        DButton {
+            id: forgetButton
+            property bool armed: false
+
+            visible: panel.bridgeIp !== "" && !panel.waiting
+            text: armed ? I18n.trFor("hueDirector", "Click again to confirm") : I18n.trFor("hueDirector", "Forget bridge")
+            iconName: "link_off"
+            backgroundColor: armed ? Theme.error : Theme.secondaryContainer
+            textColor: armed ? Theme.surface : Theme.surfaceText
+            onClicked: {
+                if (!armed) {
+                    armed = true;
+                    disarmTimer.restart();
+                    return;
+                }
+                armed = false;
+                panel.bridge.forget(() => {
+                    panel.result = "";
+                    panel.message = I18n.trFor("hueDirector", "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.");
+                });
+            }
+
+            Timer {
+                id: disarmTimer
+                interval: 5000
+                onTriggered: forgetButton.armed = false
+            }
+        }
     }
 
     StyledText {
