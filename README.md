@@ -8,13 +8,30 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 
 ## Features
 
-- **Bar pill**: lightbulb icon and number of lights on, for the whole home or a favorite room. Turns red when the bridge can't be reached. Right-click it to turn your favorite light on or off.
-- **Room cards**: one card per room with its icon, how many lights are on, an on/off switch and a brightness slider. Cards are tinted with the current color of the room's lights. A button turns off every light in the home.
-- **Room page**: click a card to open the room. Scenes are shown as tiles painted with the scene's own colors; the active scene is marked, scenes with a color palette have a play button to run them as dynamic scenes, and smart scenes (a different scene for each time of day) are marked with a clock. Each light has its own switch and brightness slider; unreachable lights (unplugged or out of range) are marked.
-- **Identify**: a button on each light pulses its brightness twice in 2.5 seconds and then restores it, so you can tell which lamp it is.
-- **Color**: click a light to show its color controls, including light effects (candle, fireplace, sparkle, ...) and a 30-minute sunrise or sunset: color temperature (in Kelvin), a rainbow hue slider, and the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
-- **Automations**: turn a light, a room or all lights on or off when you log in, lock or unlock the screen, the monitors turn off or on, suspend or resume, log out, power off or reboot. Set them up in the plugin settings (gear button in the popout).
-- **Live updates**: changes made from the Hue app or switches show up right away, through the bridge event stream. If the stream fails, the plugin falls back to polling every 30 seconds.
+### In the bar
+- **Status icon** for the whole home or a favorite room: a lit bulb and the number of lights on (the number can be hidden), an off bulb when everything is off, a broken link when not paired, red when the bridge can't be reached.
+- **Right-click** turns your favorite light, room or all lights on or off.
+
+### In the popout
+- **Room cards**: icon from the room type set in the Hue app, how many lights are on, brightness, an on/off switch and a brightness slider. Each card is tinted with the current color of its lights. One button turns off every light in the home, another opens the plugin settings.
+- **Room page** (click a card):
+  - **Scenes** as tiles painted with each scene's own colors. The current scene is marked, also when the bridge no longer reports it active (it is recognized from the lights' state).
+  - **Dynamic scenes**: scenes with a color palette have a play button that keeps their colors slowly cycling.
+  - **Smart scenes** (a different scene for each time of day, from the Hue app) are marked with a clock; click to start or stop them.
+  - **Lights**: switch, brightness, and a mark on unreachable lights (unplugged or out of range).
+- **Light controls** (palette button on a light): color temperature in Kelvin, a rainbow hue slider, the shell color picker for any exact color (hex, color area, eyedropper, recent colors), and a menu of light effects (candle, fireplace, prism, sparkle, ...) with a 30-minute sunrise or sunset.
+- **Identify**: makes a light pulse its brightness twice in 2.5 seconds, then restores it, so you can tell which lamp it is.
+
+### Session events
+- Turn a light, a room or all lights on or off when you **log in or out**, **lock or unlock** the screen, when the **monitors turn off or on**, on **suspend and resume**, on **reboot** and on **power off**. See [Automations](#automations).
+
+### Everywhere
+- **Live updates**: changes made from the Hue app or from switches show up within a second, through the bridge event stream; if the stream fails, the plugin polls every 30 seconds.
+- **Fade time** for switching lights and scenes, and **dynamic scene speed**, in the settings.
+- **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | scene`. See [Command line and keybindings](#command-line-and-keybindings).
+- **One connection to the bridge** for the whole shell, also with a bar on every monitor.
+- **No external Hue tools**: the plugin talks to the bridge directly (Hue API v2), with in-shell pairing and certificate pinning.
+- **Translations**: English, French, German, Italian, Japanese, Korean, Simplified Chinese, Spanish.
 
 The plugin talks only to your Hue Bridge. The only internet request is bridge discovery through `discovery.meethue.com`, and only when the bridge isn't found on the local network.
 
@@ -37,12 +54,11 @@ The plugin checks for `curl` and `openssl` when it is enabled. If one is missing
 
 ## Installation
 
-1. Open DMS Settings → Plugins
-2. Click "Scan for Plugins"
-3. Browse for `Hue Director` 3rd party plugin
-4. Install and enable it
+1. Open Settings → Plugins and click **Browse**.
+2. Find **Hue Director**, then install and enable it.
+3. Add the Hue Director widget to the bar.
 
-Manual install: clone this repository into `~/.config/dms/plugins/hueDirector`, then scan for plugins and enable it.
+Or from a terminal: `dms plugins install hueDirector`.
 
 ## Pairing with the Hue Bridge
 
@@ -50,14 +66,14 @@ The plugin needs to be paired with your Hue Bridge once. Keep the bridge within 
 
 ### First time
 
-1. Add the Hue Director widget to the bar. While it is not paired, it shows a broken-link icon.
+1. Enable the plugin and add the Hue Director widget to the bar. While it is not paired, it shows a broken-link icon.
 2. Click the widget to open it, then click **Pair**.
-3. When the widget asks you to, press the round button on top of the Hue Bridge.
-4. The widget shows "Paired with the Hue Bridge" and loads your rooms.
+3. When the widget asks you to, press the round button on top of the Hue Bridge. Pairing keeps going if the popout closes while you walk to the bridge.
+4. Once paired, the popout shows your rooms.
 
 ### Pairing again
 
-Pair again if you reset or replaced the bridge, or if its IP address changed:
+Pair again if you reset or replaced the bridge, or if its IP address changed. If the bridge answering on the saved address isn't the one you paired with, the popout shows the pairing panel by itself.
 
 1. Open DMS Settings → Plugins → Hue Director.
 2. Under **Hue Bridge**, click **Pair again** and press the bridge button.
@@ -66,7 +82,7 @@ The current pairing is replaced only if the new one succeeds. If you cancel, or 
 
 ### If the bridge is not found
 
-The plugin looks for the bridge on your network automatically. If it can't find it, enter the bridge IP address in the **Bridge IP address** field before clicking Pair. The Hue app shows it under Settings → Bridges.
+The plugin looks for the bridge on your network automatically. If it can't find it, enter the bridge IP address in the **Bridge IP address** field before clicking Pair. The Hue app shows it in the bridge's settings; your router's list of connected devices shows it too.
 
 ### Security and privacy
 
