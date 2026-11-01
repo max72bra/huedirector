@@ -16,18 +16,7 @@ Column {
     signal toggleRequested(bool on)
     signal brightnessRequested(int value)
 
-    // Requested value held until the bridge reports it, so stale or mid-transition refreshes don't move the slider
-    property int pendingBrightness: -1
-
-    onBrightnessChanged: if (Math.abs(brightness - pendingBrightness) <= 1) pendingBrightness = -1
-
     spacing: Theme.spacingXS
-
-    Timer {
-        id: pendingTimeout
-        interval: 3000
-        onTriggered: row.pendingBrightness = -1
-    }
 
     Row {
         width: parent.width
@@ -50,8 +39,7 @@ Column {
         }
     }
 
-    DSlider {
-        id: slider
+    HeldSlider {
         width: parent.width
         visible: row.dimmable
         minimum: 1
@@ -59,16 +47,7 @@ Column {
         unit: "%"
         startIcon: "brightness_low"
         endIcon: "brightness_high"
-        onSliderValueChanged: newValue => {
-            row.pendingBrightness = newValue;
-            pendingTimeout.restart();
-            row.brightnessRequested(newValue);
-        }
-
-        // DSlider assigns value on drag, which would break a plain binding
-        Binding on value {
-            when: !slider.isDragging && row.pendingBrightness < 0
-            value: row.brightness
-        }
+        reported: row.brightness
+        onRequested: value => row.brightnessRequested(value)
     }
 }

@@ -14,6 +14,9 @@ PluginComponent {
     property string error: ""
     property bool loaded: false
 
+    // Red, orange, yellow, green, cyan, blue, purple, pink
+    readonly property var colorPresets: ["#FF0000", "#FF8000", "#FFD000", "#00FF00", "#00FFFF", "#0000FF", "#8000FF", "#FF00A0"]
+
     readonly property int lightsOn: lights.filter(l => l.HueData?.on?.on).length
     readonly property string pillIcon: error ? "error" : (lightsOn > 0 ? "lightbulb" : "light_off")
     readonly property color pillColor: error ? Theme.error : (lightsOn > 0 ? Theme.primary : Theme.surfaceText)
@@ -184,18 +187,60 @@ PluginComponent {
                             Repeater {
                                 model: roomControl.expanded ? roomItem.roomLights.length : 0
 
-                                ControlRow {
+                                Column {
+                                    id: lightItem
                                     required property int index
                                     readonly property var light: roomItem.roomLights[index]
+                                    readonly property var colorTemp: light?.HueData?.color_temperature ?? null
+                                    readonly property bool hasColor: !!light?.HueData?.color
 
                                     x: Theme.spacingL
                                     width: roomItem.width - x
-                                    name: light?.Name ?? ""
-                                    isOn: light?.HueData?.on?.on ?? false
-                                    brightness: Math.round(light?.HueData?.dimming?.brightness ?? 0)
-                                    dimmable: !!light?.HueData?.dimming
-                                    onToggleRequested: on => root.setResource("light", light.Id, [on ? "--on" : "--off"])
-                                    onBrightnessRequested: value => root.setResource("light", light.Id, ["--on", "--brightness", String(value)])
+                                    spacing: Theme.spacingXS
+
+                                    ControlRow {
+                                        id: lightControl
+                                        width: parent.width
+                                        name: lightItem.light?.Name ?? ""
+                                        isOn: lightItem.light?.HueData?.on?.on ?? false
+                                        brightness: Math.round(lightItem.light?.HueData?.dimming?.brightness ?? 0)
+                                        dimmable: !!lightItem.light?.HueData?.dimming
+                                        expandable: lightItem.hasColor || !!lightItem.colorTemp
+                                        onToggleRequested: on => root.setResource("light", lightItem.light.Id, [on ? "--on" : "--off"])
+                                        onBrightnessRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--brightness", String(value)])
+                                    }
+
+                                    // Color temperature in Kelvin (bridge uses mirek = 1e6 / K)
+                                    HeldSlider {
+                                        width: parent.width
+                                        visible: lightControl.expanded && !!lightItem.colorTemp
+                                        minimum: Math.round(1e6 / (lightItem.colorTemp?.mirek_schema?.mirek_maximum ?? 500))
+                                        maximum: Math.round(1e6 / (lightItem.colorTemp?.mirek_schema?.mirek_minimum ?? 153))
+                                        step: 50
+                                        unit: "K"
+                                        startIcon: "wb_incandescent"
+                                        endIcon: "wb_sunny"
+                                        reported: Math.round(1e6 / (lightItem.colorTemp?.mirek || 370))
+                                        // Kelvin -> mirek -> Kelvin rounding drifts up to ~50K at the cold end
+                                        tolerance: 100
+                                        onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--temperature", String(Math.round(1e6 / value))])
+                                    }
+
+                                    Flow {
+                                        width: parent.width
+                                        visible: lightControl.expanded && lightItem.hasColor
+                                        spacing: Theme.spacingXS
+
+                                        Repeater {
+                                            model: root.colorPresets
+
+                                            DColorButton {
+                                                required property string modelData
+                                                swatchColor: modelData
+                                                onClicked: root.setResource("light", lightItem.light.Id, ["--on", "--rgb", modelData])
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
