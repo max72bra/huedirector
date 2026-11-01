@@ -235,5 +235,65 @@
     },
     "%1 s": {
         "%1 s": "%1 秒"
+    },
+    "Identify": {
+        "Identify": "识别"
+    },
+    "No effect": {
+        "No effect": "无效果"
+    },
+    "Candle": {
+        "Candle": "烛光"
+    },
+    "Fireplace": {
+        "Fireplace": "壁炉"
+    },
+    "Prism": {
+        "Prism": "棱镜"
+    },
+    "Sparkle": {
+        "Sparkle": "闪耀"
+    },
+    "Opal": {
+        "Opal": "蛋白石"
+    },
+    "Glisten": {
+        "Glisten": "闪烁"
+    },
+    "Underwater": {
+        "Underwater": "水下"
+    },
+    "Cosmos": {
+        "Cosmos": "宇宙"
+    },
+    "Sunbeam": {
+        "Sunbeam": "阳光"
+    },
+    "Enchant": {
+        "Enchant": "魔幻"
+    },
+    "Sunrise": {
+        "Sunrise": "日出"
+    },
+    "Sunset": {
+        "Sunset": "日落"
+    },
+    "Dynamic scene speed": {
+        "Dynamic scene speed": "动态场景速度"
+    },
+    "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": {
+        "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": "播放场景时颜色变化的速度。速度会保存在场景中，Hue 应用中也会生效"
+    },
+    "Scene default": {
+        "Scene default": "场景默认"
+    },
+    "Slow": {
+        "Slow": "慢"
+    },
+    "Medium": {
+        "Medium": "中"
+    },
+    "Fast": {
+        "Fast": "快"
     }
 }

@@ -134,9 +134,10 @@ Item {
         pendingBodies[id] = merged;
         const sent = Object.assign({}, merged);
         if (transitionMs >= 0) {
-            if (sent.recall)
+            // Smart scenes take only an action in recall
+            if (sent.recall && kind === "scene")
                 sent.recall = Object.assign({}, sent.recall, { duration: transitionMs });
-            else if (sent.on && !sent.dimming && !sent.color && !sent.color_temperature)
+            else if (sent.on && !sent.dimming && !sent.color && !sent.color_temperature && !sent.dynamics)
                 sent.dynamics = { duration: transitionMs };
         }
         Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(sent), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
@@ -170,7 +171,8 @@ Item {
     }
 
     // Joins flat v2 resources into the shape the UI was built on:
-    // room {Id, Name, Archetype, GroupedLight.HueData, Scenes[] {Id, Name, HueData}},
+    // room {Id, Name, Archetype, GroupedLight.HueData, Scenes[] {Id, Name, HueData},
+    //       SmartScenes[] {Id, Name, HueData, Current = scene of the active time slot or null}},
     // light {Id, Name, Archetype, HueData, Reachable, Parent.Parent.Id = room}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
         const deviceRoom = {};
@@ -193,12 +195,27 @@ Item {
             if (r.type === "scene" && r.group?.rtype === "room")
                 (scenesByRoom[r.group.rid] = scenesByRoom[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r });
         }
+        // Smart scenes switch between scenes by time of day; Current gives the tile its colors
+        const sceneById = {};
+        for (const list of Object.values(scenesByRoom))
+            for (const sc of list)
+                sceneById[sc.Id] = sc;
+        const smartByRoom = {};
+        for (const r of data) {
+            if (r.type !== "smart_scene" || r.group?.rtype !== "room")
+                continue;
+            const slot = r.active_timeslot;
+            const day = (r.week_timeslots ?? []).find(w => (w.recurrence ?? []).includes(slot?.weekday));
+            const current = sceneById[day?.timeslots?.[slot?.timeslot_id]?.target?.rid] ?? null;
+            (smartByRoom[r.group.rid] = smartByRoom[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r, Current: current });
+        }
         const rooms = data.filter(r => r.type === "room").map(r => ({
             Id: r.id,
             Name: r.metadata?.name ?? "",
             Archetype: r.metadata?.archetype ?? "",
             GroupedLight: groupedByRoom[r.id] ? { HueData: groupedByRoom[r.id] } : null,
-            Scenes: scenesByRoom[r.id] ?? []
+            Scenes: scenesByRoom[r.id] ?? [],
+            SmartScenes: smartByRoom[r.id] ?? []
         }));
         const lights = data.filter(r => r.type === "light").map(l => ({
             Id: l.id,

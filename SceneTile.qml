@@ -14,6 +14,8 @@ Rectangle {
     // Scenes with a color palette can run as dynamic scenes (colors cycling slowly)
     property bool dynamicCapable: false
     property bool dynamicActive: false
+    // Smart scene (changes with the time of day): marked with a clock badge
+    property bool smart: false
 
     signal activated
     signal dynamicToggled
@@ -100,6 +102,24 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: tile.activated()
+    }
+
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: Theme.spacingXS
+        width: 22
+        height: 22
+        radius: 11
+        visible: tile.smart
+        color: Qt.rgba(0, 0, 0, 0.35)
+
+        DIcon {
+            anchors.centerIn: parent
+            name: "schedule"
+            size: Theme.iconSizeSmall
+            color: "white"
+        }
     }
 
     // Play/pause the dynamic palette; above the tile MouseArea so it gets its own clicks

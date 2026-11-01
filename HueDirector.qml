@@ -154,6 +154,67 @@ PluginComponent {
             setResource(t.kind, t.id, { on: { on: !hueBridge.targetIsOn(t, { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId }) } });
     }
 
+    // Soft blink: two brightness pulses in 2.5 s (4 steps of 625 ms, each a 600 ms fade), then back to the
+    // light's previous state. Hue "breathe" can't be stopped and runs far longer on some lights
+    readonly property int identifyStepMs: 625
+    // light id -> remaining PUT bodies
+    property var identifyQueue: ({})
+
+    function identify(light) {
+        const hd = light?.HueData;
+        if (!hd || identifyQueue[light.Id])
+            return;
+        const fade = { duration: identifyStepMs - 25 };
+        let steps;
+        if (hd.on?.on) {
+            const bri = hd.dimming?.brightness ?? 100;
+            // Dim a bright light, brighten a dim one: the pulse must be visible either way
+            const pulse = bri > 40 ? Math.max(1, Math.round(bri * 0.15)) : 100;
+            steps = [pulse, bri, pulse, bri].map(b => ({ dimming: { brightness: b }, dynamics: fade }));
+        } else {
+            steps = [{ on: { on: true }, dimming: { brightness: 100 }, dynamics: fade }, { dimming: { brightness: 5 }, dynamics: fade }, { dimming: { brightness: 100 }, dynamics: fade }, { on: { on: false }, dynamics: fade }];
+        }
+        identifyQueue = Object.assign({}, identifyQueue, { [light.Id]: steps });
+        identifyStep();
+        identifyTimer.start();
+    }
+
+    function identifyStep() {
+        const next = {};
+        for (const id in identifyQueue) {
+            const steps = identifyQueue[id];
+            setResource("light", id, steps[0]);
+            if (steps.length > 1)
+                next[id] = steps.slice(1);
+        }
+        identifyQueue = next;
+        if (Object.keys(next).length === 0)
+            identifyTimer.stop();
+    }
+
+    Timer {
+        id: identifyTimer
+        interval: root.identifyStepMs
+        repeat: true
+        onTriggered: root.identifyStep()
+    }
+
+    // Timed effects (sunrise/sunset) need a duration: 30 minutes, like the Hue app default.
+    // "no_effect" clears both kinds, since only one of them can be running
+    function setEffect(light, value) {
+        const timed = light?.HueData?.timed_effects?.effect_values ?? [];
+        let body;
+        if (value === "no_effect")
+            body = { effects: { effect: "no_effect" } };
+        else if (timed.includes(value))
+            body = { on: { on: true }, timed_effects: { effect: value, duration: 1800000 } };
+        else
+            body = { on: { on: true }, effects: { effect: value } };
+        if (value === "no_effect" && light?.HueData?.timed_effects?.status && light.HueData.timed_effects.status !== "no_effect")
+            body.timed_effects = { effect: "no_effect" };
+        setResource("light", light.Id, body);
+    }
+
     function setColor(lightId, c) {
         const xy = hueBridge.rgbToXy(c);
         if (xy)
@@ -288,7 +349,7 @@ PluginComponent {
     }
 
     // Resource types shown by the widget; other events (sensors, connectivity, ...) don't refresh
-    readonly property var watchedTypes: ["light", "grouped_light", "scene", "room", "zigbee_connectivity"]
+    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zigbee_connectivity"]
 
     // Live updates from the bridge event stream (SSE): relevant events trigger a refresh,
     // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
@@ -487,7 +548,10 @@ PluginComponent {
                         readonly property var room: root.rooms.find(r => r.Id === root.openRoomId) ?? null
                         readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
                         readonly property var scenes: room?.Scenes ?? []
-                        readonly property string activeSceneId: root.currentSceneId(scenes)
+                        readonly property var smartScenes: room?.SmartScenes ?? []
+                        // A running smart scene drives the lights: no regular scene is marked meanwhile
+                        readonly property bool smartActive: smartScenes.some(s => s.HueData?.state === "active")
+                        readonly property string activeSceneId: smartActive ? "" : root.currentSceneId(scenes)
                         // Clicked scene held until the bridge reports it active, like HeldSlider.pending
                         property string pendingSceneId: ""
                         // One light at a time shows its color controls
@@ -551,7 +615,7 @@ PluginComponent {
                         }
 
                         StyledText {
-                            visible: roomPage.scenes.length > 0
+                            visible: roomPage.scenes.length + roomPage.smartScenes.length > 0
                             text: I18n.trFor("hueDirector", "Scenes")
                             font.pixelSize: Theme.fontSizeMedium
                             font.weight: Font.Medium
@@ -586,8 +650,30 @@ PluginComponent {
                                     onDynamicToggled: {
                                         roomPage.pendingSceneId = scene.Id;
                                         pendingSceneTimeout.restart();
-                                        root.setResource("scene", scene.Id, { recall: { action: dynamicActive ? "static" : "dynamic_palette" } });
+                                        const body = { recall: { action: dynamicActive ? "static" : "dynamic_palette" } };
+                                        // Settings → Dynamic scene speed; "-1" keeps the speed saved in the scene
+                                        const speed = parseFloat(root.pluginData?.dynamicSpeed ?? "-1");
+                                        if (!dynamicActive && speed >= 0)
+                                            body.speed = speed;
+                                        root.setResource("scene", scene.Id, body);
                                     }
+                                }
+                            }
+
+                            // Smart scenes: a different scene for each time of day; click starts or stops them
+                            Repeater {
+                                model: roomPage.smartScenes.length
+
+                                SceneTile {
+                                    required property int index
+                                    readonly property var smartScene: roomPage.smartScenes[index]
+
+                                    width: (sceneGrid.width - sceneGrid.spacing * (sceneGrid.columns - 1)) / sceneGrid.columns
+                                    name: smartScene?.Name ?? ""
+                                    colors: root.sceneColors(smartScene?.Current)
+                                    smart: true
+                                    active: smartScene?.HueData?.state === "active"
+                                    onActivated: root.setResource("smart_scene", smartScene.Id, { recall: { action: active ? "deactivate" : "activate" } })
                                 }
                             }
                         }
@@ -623,6 +709,8 @@ PluginComponent {
                                     onExpandToggled: roomPage.expandedLightId = expanded ? "" : light.Id
                                     onToggleRequested: on => root.setResource("light", light.Id, { on: { on: on } })
                                     onBrightnessRequested: value => root.setResource("light", light.Id, { on: { on: true }, dimming: { brightness: value } })
+                                    onIdentifyRequested: root.identify(light)
+                                    onEffectRequested: value => root.setEffect(light, value)
                                     onTemperatureRequested: mirek => root.setResource("light", light.Id, { on: { on: true }, color_temperature: { mirek: mirek } })
                                 }
                             }

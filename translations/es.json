@@ -235,5 +235,65 @@
     },
     "%1 s": {
         "%1 s": "%1 s"
+    },
+    "Identify": {
+        "Identify": "Identificar"
+    },
+    "No effect": {
+        "No effect": "Sin efecto"
+    },
+    "Candle": {
+        "Candle": "Vela"
+    },
+    "Fireplace": {
+        "Fireplace": "Chimenea"
+    },
+    "Prism": {
+        "Prism": "Prisma"
+    },
+    "Sparkle": {
+        "Sparkle": "Destello"
+    },
+    "Opal": {
+        "Opal": "Ópalo"
+    },
+    "Glisten": {
+        "Glisten": "Brillo"
+    },
+    "Underwater": {
+        "Underwater": "Bajo el agua"
+    },
+    "Cosmos": {
+        "Cosmos": "Cosmos"
+    },
+    "Sunbeam": {
+        "Sunbeam": "Rayo de sol"
+    },
+    "Enchant": {
+        "Enchant": "Encanto"
+    },
+    "Sunrise": {
+        "Sunrise": "Amanecer"
+    },
+    "Sunset": {
+        "Sunset": "Atardecer"
+    },
+    "Dynamic scene speed": {
+        "Dynamic scene speed": "Velocidad de las escenas dinámicas"
+    },
+    "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": {
+        "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": "Rapidez con la que cambian los colores al reproducir una escena. La velocidad se guarda en la escena, también para la app Hue"
+    },
+    "Scene default": {
+        "Scene default": "Predeterminada de la escena"
+    },
+    "Slow": {
+        "Slow": "Lenta"
+    },
+    "Medium": {
+        "Medium": "Media"
+    },
+    "Fast": {
+        "Fast": "Rápida"
     }
 }

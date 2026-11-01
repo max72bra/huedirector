@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Identify: a button on each light pulses its brightness twice in 2.5 s, then restores it, to find it.
+- Light effects (candle, fireplace, prism, sparkle, opal, glisten, underwater, cosmos, sunbeam, enchant) and timed sunrise/sunset, in the light's color controls.
+- Smart scenes (a different scene for each time of day) appear among the room's scenes with a clock badge; click to start or stop them.
+- Dynamic scene speed setting (scene default, slow, medium, fast).
+
 ## 1.1.0
 
 - Unreachable lights (unplugged or out of zigbee range) are marked in the light rows and counted on the room cards.

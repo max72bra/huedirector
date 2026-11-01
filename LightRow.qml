@@ -24,7 +24,17 @@ DCard {
     readonly property bool reachable: light?.Reachable ?? true
     readonly property var colorTemp: hd?.color_temperature ?? null
     readonly property bool hasColor: !!hd?.color
-    readonly property bool hasColorControls: hasColor || !!colorTemp
+    // Effects the light supports, then the timed ones (sunrise/sunset), "no_effect" first
+    readonly property var timedEffects: (hd?.timed_effects?.effect_values ?? []).filter(e => e !== "no_effect")
+    readonly property var effectValues: {
+        const regular = (hd?.effects?.effect_values ?? []).filter(e => e !== "no_effect");
+        return regular.length || timedEffects.length ? ["no_effect"].concat(regular, timedEffects) : [];
+    }
+    readonly property string currentEffect: {
+        const timed = hd?.timed_effects?.status ?? "no_effect";
+        return timed !== "no_effect" ? timed : (hd?.effects?.status ?? "no_effect");
+    }
+    readonly property bool hasColorControls: hasColor || !!colorTemp || effectValues.length > 0
     readonly property color accentColor: currentRgb ? Qt.rgba(currentRgb[0], currentRgb[1], currentRgb[2], 1) : Theme.primary
     readonly property color visibleAccent: Accent.visible(accentColor, Theme.surfaceContainer)
 
@@ -32,6 +42,9 @@ DCard {
     signal brightnessRequested(int value)
     signal temperatureRequested(int mirek)
     signal expandToggled
+    signal identifyRequested
+    // value: an entry of effectValues ("no_effect" stops both regular and timed effects)
+    signal effectRequested(string value)
     // function (color) set by the host. A function, not a signal: the color picker calls it after
     // the popout (and this row) may already be gone
     property var applyColor: null
@@ -64,7 +77,7 @@ DCard {
             }
 
             Column {
-                width: parent.width - iconBubble.width - (expandIcon.visible ? expandIcon.width + parent.spacing : 0) - toggle.width - parent.spacing * 2
+                width: parent.width - iconBubble.width - (expandIcon.visible ? expandIcon.width + parent.spacing : 0) - (identifyButton.visible ? identifyButton.width + parent.spacing : 0) - toggle.width - parent.spacing * 2
                 anchors.verticalCenter: parent.verticalCenter
 
                 StyledText {
@@ -81,6 +94,16 @@ DCard {
                     font.pixelSize: Theme.fontSizeSmall
                     color: row.reachable ? Theme.surfaceVariantText : Theme.error
                 }
+            }
+
+            // Blinks the light to find it
+            DIconButton {
+                id: identifyButton
+                anchors.verticalCenter: parent.verticalCenter
+                visible: row.reachable && !!row.hd?.dimming
+                iconName: "flare"
+                tooltipText: I18n.trFor("hueDirector", "Identify")
+                onClicked: row.identifyRequested()
             }
 
             DIconButton {
@@ -219,6 +242,54 @@ DCard {
                     picker.show();
                 }
             }
+        }
+
+        // Light effects (candle, fire, ...) and timed ones (sunrise, sunset)
+        DFilterChips {
+            width: parent.width
+            visible: row.expanded && row.effectValues.length > 0
+            showCounts: false
+            model: row.effectValues.map(v => ({ label: row.effectLabel(v), value: v }))
+            onSelectionChanged: index => row.effectRequested(row.effectValues[index])
+
+            // Chips assign currentIndex on click, which would break a plain binding
+            Binding on currentIndex {
+                value: Math.max(0, row.effectValues.indexOf(row.currentEffect))
+            }
+        }
+    }
+
+    // Literal strings, so the translation tooling can extract them
+    function effectLabel(v) {
+        switch (v) {
+        case "no_effect":
+            return I18n.trFor("hueDirector", "No effect");
+        case "candle":
+            return I18n.trFor("hueDirector", "Candle");
+        case "fire":
+            return I18n.trFor("hueDirector", "Fireplace");
+        case "prism":
+            return I18n.trFor("hueDirector", "Prism");
+        case "sparkle":
+            return I18n.trFor("hueDirector", "Sparkle");
+        case "opal":
+            return I18n.trFor("hueDirector", "Opal");
+        case "glisten":
+            return I18n.trFor("hueDirector", "Glisten");
+        case "underwater":
+            return I18n.trFor("hueDirector", "Underwater");
+        case "cosmos":
+            return I18n.trFor("hueDirector", "Cosmos");
+        case "sunbeam":
+            return I18n.trFor("hueDirector", "Sunbeam");
+        case "enchant":
+            return I18n.trFor("hueDirector", "Enchant");
+        case "sunrise":
+            return I18n.trFor("hueDirector", "Sunrise");
+        case "sunset":
+            return I18n.trFor("hueDirector", "Sunset");
+        default:
+            return v;
         }
     }
 }

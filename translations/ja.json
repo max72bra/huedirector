@@ -235,5 +235,65 @@
     },
     "%1 s": {
         "%1 s": "%1 秒"
+    },
+    "Identify": {
+        "Identify": "識別"
+    },
+    "No effect": {
+        "No effect": "エフェクトなし"
+    },
+    "Candle": {
+        "Candle": "キャンドル"
+    },
+    "Fireplace": {
+        "Fireplace": "暖炉"
+    },
+    "Prism": {
+        "Prism": "プリズム"
+    },
+    "Sparkle": {
+        "Sparkle": "きらめき"
+    },
+    "Opal": {
+        "Opal": "オパール"
+    },
+    "Glisten": {
+        "Glisten": "グリステン"
+    },
+    "Underwater": {
+        "Underwater": "水中"
+    },
+    "Cosmos": {
+        "Cosmos": "コスモス"
+    },
+    "Sunbeam": {
+        "Sunbeam": "サンビーム"
+    },
+    "Enchant": {
+        "Enchant": "エンチャント"
+    },
+    "Sunrise": {
+        "Sunrise": "日の出"
+    },
+    "Sunset": {
+        "Sunset": "日の入り"
+    },
+    "Dynamic scene speed": {
+        "Dynamic scene speed": "ダイナミックシーンの速度"
+    },
+    "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": {
+        "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": "シーン再生時に色が切り替わる速さ。速度はシーンに保存され、Hue アプリにも反映されます"
+    },
+    "Scene default": {
+        "Scene default": "シーンの既定値"
+    },
+    "Slow": {
+        "Slow": "遅い"
+    },
+    "Medium": {
+        "Medium": "普通"
+    },
+    "Fast": {
+        "Fast": "速い"
     }
 }

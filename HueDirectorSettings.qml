@@ -85,6 +85,20 @@ PluginSettings {
         defaultValue: "-1"
     }
 
+    // Saved into the scene when a dynamic scene starts (Hue speed 0..1); "-1" keeps the scene's own speed
+    SelectionSetting {
+        settingKey: "dynamicSpeed"
+        label: I18n.trFor("hueDirector", "Dynamic scene speed")
+        description: I18n.trFor("hueDirector", "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app")
+        options: [
+            { label: I18n.trFor("hueDirector", "Scene default"), value: "-1" },
+            { label: I18n.trFor("hueDirector", "Slow"), value: "0.2" },
+            { label: I18n.trFor("hueDirector", "Medium"), value: "0.5" },
+            { label: I18n.trFor("hueDirector", "Fast"), value: "0.85" }
+        ]
+        defaultValue: "-1"
+    }
+
     ToggleSetting {
         settingKey: "showLightCount"
         label: I18n.trFor("hueDirector", "Show lights on count")

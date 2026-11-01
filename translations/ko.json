@@ -235,5 +235,65 @@
     },
     "%1 s": {
         "%1 s": "%1초"
+    },
+    "Identify": {
+        "Identify": "식별"
+    },
+    "No effect": {
+        "No effect": "효과 없음"
+    },
+    "Candle": {
+        "Candle": "촛불"
+    },
+    "Fireplace": {
+        "Fireplace": "벽난로"
+    },
+    "Prism": {
+        "Prism": "프리즘"
+    },
+    "Sparkle": {
+        "Sparkle": "반짝임"
+    },
+    "Opal": {
+        "Opal": "오팔"
+    },
+    "Glisten": {
+        "Glisten": "글리스닝"
+    },
+    "Underwater": {
+        "Underwater": "수중"
+    },
+    "Cosmos": {
+        "Cosmos": "우주"
+    },
+    "Sunbeam": {
+        "Sunbeam": "햇살"
+    },
+    "Enchant": {
+        "Enchant": "마법"
+    },
+    "Sunrise": {
+        "Sunrise": "일출"
+    },
+    "Sunset": {
+        "Sunset": "일몰"
+    },
+    "Dynamic scene speed": {
+        "Dynamic scene speed": "동적 장면 속도"
+    },
+    "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": {
+        "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": "장면을 재생할 때 색상이 바뀌는 속도입니다. 속도는 장면에 저장되며 Hue 앱에도 적용됩니다"
+    },
+    "Scene default": {
+        "Scene default": "장면 기본값"
+    },
+    "Slow": {
+        "Slow": "느리게"
+    },
+    "Medium": {
+        "Medium": "보통"
+    },
+    "Fast": {
+        "Fast": "빠르게"
     }
 }
