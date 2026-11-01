@@ -4,6 +4,8 @@ Control your Philips Hue lights from the Dux Shell bar. Hue Director talks direc
 
 Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 
+![Hue Director popout: room cards tinted with the lights' color, brightness sliders, settings and all-off buttons](screenshot.png)
+
 ## Features
 
 - **Bar pill**: lightbulb icon and number of lights on, for the whole home or a favorite room. Turns red when the bridge can't be reached. Right-click it to turn your favorite light on or off.
