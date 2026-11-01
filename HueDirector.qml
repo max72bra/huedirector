@@ -30,6 +30,50 @@ PluginComponent {
     readonly property string pillIcon: !paired ? "link_off" : error ? "error" : (pillLightsOn > 0 ? "lightbulb" : "light_off")
     readonly property color pillColor: paired && error ? Theme.error : (paired && pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
+    // Current color of a light as [r, g, b] in 0..1 at full brightness, or null when off/unknown.
+    // mirek_valid tells whether the light is in color temperature mode or xy color mode
+    function lightRgb(light) {
+        const hd = light?.HueData;
+        if (!hd?.on?.on)
+            return null;
+        if (hd.color_temperature?.mirek_valid && hd.color_temperature.mirek)
+            return mirekToRgb(hd.color_temperature.mirek);
+        if (hd.color?.xy)
+            return xyToRgb(hd.color.xy.x, hd.color.xy.y);
+        return null;
+    }
+
+    // CIE xy -> sRGB with the Wide RGB D65 matrix from the Hue developer docs, normalized so the max channel is 1
+    function xyToRgb(x, y) {
+        if (y <= 0)
+            return null;
+        const X = x / y, Z = (1 - x - y) / y;
+        const lin = [X * 1.656492 - 0.354851 - Z * 0.255038, -X * 0.707196 + 1.655397 + Z * 0.036152, X * 0.051713 - 0.121364 + Z * 1.011530].map(v => Math.max(0, v));
+        const m = Math.max(...lin) || 1;
+        return lin.map(v => v / m).map(v => v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+    }
+
+    // Color temperature -> RGB, Tanner Helland's blackbody approximation
+    function mirekToRgb(mirek) {
+        const t = 1e6 / mirek / 100;
+        const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
+        const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+        const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+        return [r, g, b].map(v => Math.min(255, Math.max(0, v)) / 255);
+    }
+
+    // Average color of the lights that are on, or null
+    function averageRgb(lightList) {
+        const colors = lightList.map(lightRgb).filter(c => c);
+        if (!colors.length)
+            return null;
+        return [0, 1, 2].map(i => colors.reduce((sum, c) => sum + c[i], 0) / colors.length);
+    }
+
+    function rgbColor(rgb) {
+        return rgb ? Qt.rgba(rgb[0], rgb[1], rgb[2], 1) : Theme.primary;
+    }
+
     // openhue prints this and exits 0 when it has no config
     function isUnpaired(stdout) {
         return stdout.indexOf("not configured yet") !== -1;
@@ -240,6 +284,7 @@ PluginComponent {
                             ControlRow {
                                 id: roomControl
                                 width: parent.width
+                                accentColor: root.rgbColor(root.averageRgb(roomItem.roomLights))
                                 name: roomItem.room?.Name ?? ""
                                 isOn: roomItem.room?.GroupedLight?.HueData?.on?.on ?? false
                                 brightness: Math.round(roomItem.room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
@@ -276,6 +321,7 @@ PluginComponent {
                                     readonly property var light: roomItem.roomLights[index]
                                     readonly property var colorTemp: light?.HueData?.color_temperature ?? null
                                     readonly property bool hasColor: !!light?.HueData?.color
+                                    readonly property color accentColor: root.rgbColor(root.lightRgb(light))
 
                                     x: Theme.spacingL
                                     width: roomItem.width - x
@@ -284,6 +330,7 @@ PluginComponent {
                                     ControlRow {
                                         id: lightControl
                                         width: parent.width
+                                        accentColor: lightItem.accentColor
                                         name: lightItem.light?.Name ?? ""
                                         isOn: lightItem.light?.HueData?.on?.on ?? false
                                         brightness: Math.round(lightItem.light?.HueData?.dimming?.brightness ?? 0)
@@ -306,6 +353,8 @@ PluginComponent {
                                         reported: Math.round(1e6 / (lightItem.colorTemp?.mirek || 370))
                                         // Kelvin -> mirek -> Kelvin rounding drifts up to ~50K at the cold end
                                         tolerance: 100
+                                        fillColor: lightControl.visibleAccent
+                                        fillTextColor: lightControl.accentTextColor
                                         onRequested: value => root.setResource("light", lightItem.light.Id, ["--on", "--temperature", String(Math.round(1e6 / value))])
                                     }
 
@@ -333,6 +382,7 @@ PluginComponent {
         }
     }
 
-    popoutWidth: 380
+    // Fits the 8 color presets on one row (8 × 40 + 7 × 4 = 348 px) after popout padding and light indent
+    popoutWidth: 420
     popoutHeight: 480
 }

@@ -12,6 +12,24 @@ Column {
     property bool dimmable: true
     property bool expandable: false
     property bool expanded: false
+    // Slider fill: the light's current color (Theme.primary when off or unknown)
+    property color accentColor: Theme.primary
+    // accentColor darkened (light theme) or lightened (dark theme) until it stands out from the popout background,
+    // e.g. a 6500K near-white fill on a light theme. Colors that already stand out are left untouched
+    readonly property color visibleAccent: {
+        const bg = luminance(Theme.surfaceContainer);
+        let c = accentColor;
+        for (let i = 0; i < 4 && Math.abs(luminance(c) - bg) < 0.2; i++)
+            c = bg > 0.5 ? Qt.darker(c, 1.3) : Qt.lighter(c, 1.3);
+        return c;
+    }
+    // Dark text on light fills, light text on dark ones
+    readonly property color accentTextColor: luminance(visibleAccent) > 0.5 ? "#000000" : "#FFFFFF"
+
+    // Approximate relative luminance on gamma-encoded channels, good enough for contrast decisions
+    function luminance(c) {
+        return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    }
 
     signal toggleRequested(bool on)
     signal brightnessRequested(int value)
@@ -48,6 +66,8 @@ Column {
         startIcon: "brightness_low"
         endIcon: "brightness_high"
         reported: row.brightness
+        fillColor: row.visibleAccent
+        fillTextColor: row.accentTextColor
         onRequested: value => row.brightnessRequested(value)
     }
 }
