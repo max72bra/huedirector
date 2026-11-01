@@ -20,6 +20,8 @@ DCard {
 
     readonly property var hd: light?.HueData ?? null
     readonly property bool isOn: hd?.on?.on ?? false
+    // Unplugged or out of zigbee range: the bridge still reports the last known state
+    readonly property bool reachable: light?.Reachable ?? true
     readonly property var colorTemp: hd?.color_temperature ?? null
     readonly property bool hasColor: !!hd?.color
     readonly property bool hasColorControls: hasColor || !!colorTemp
@@ -55,7 +57,7 @@ DCard {
 
                 DIcon {
                     anchors.centerIn: parent
-                    name: row.icon
+                    name: row.reachable ? row.icon : "link_off"
                     size: Theme.iconSize - 4
                     color: row.isOn ? row.visibleAccent : Theme.surfaceVariantText
                 }
@@ -75,9 +77,9 @@ DCard {
 
                 StyledText {
                     width: parent.width
-                    text: row.isOn ? Math.round(row.hd?.dimming?.brightness ?? 100) + "%" : I18n.trFor("hueDirector", "Off")
+                    text: !row.reachable ? I18n.trFor("hueDirector", "Unreachable") : row.isOn ? Math.round(row.hd?.dimming?.brightness ?? 100) + "%" : I18n.trFor("hueDirector", "Off")
                     font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
+                    color: row.reachable ? Theme.surfaceVariantText : Theme.error
                 }
             }
 

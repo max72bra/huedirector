@@ -208,5 +208,32 @@
     },
     "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
         "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "이 컴퓨터에서 Bridge를 삭제했습니다. Bridge 자체의 연결된 앱 목록에는 Hue Director가 계속 표시될 수 있습니다."
+    },
+    "%1 unreachable": {
+        "%1 unreachable": "%1개 연결 안 됨"
+    },
+    "Unreachable": {
+        "Unreachable": "연결 안 됨"
+    },
+    "Stop dynamic scene": {
+        "Stop dynamic scene": "동적 장면 중지"
+    },
+    "Play dynamic scene": {
+        "Play dynamic scene": "동적 장면 재생"
+    },
+    "Fade time": {
+        "Fade time": "페이드 시간"
+    },
+    "How long lights take to turn on or off and to change scene": {
+        "How long lights take to turn on or off and to change scene": "조명을 켜고 끄거나 장면을 바꾸는 데 걸리는 시간"
+    },
+    "Bridge default (0.4 s)": {
+        "Bridge default (0.4 s)": "Bridge 기본값 (0.4초)"
+    },
+    "Instant": {
+        "Instant": "즉시"
+    },
+    "%1 s": {
+        "%1 s": "%1초"
     }
 }

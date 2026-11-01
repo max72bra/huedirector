@@ -208,5 +208,32 @@
     },
     "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
         "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "このコンピューターから Bridge を削除しました。Bridge 側の接続済みアプリ一覧には Hue Director が残る場合があります。"
+    },
+    "%1 unreachable": {
+        "%1 unreachable": "%1 個に接続できません"
+    },
+    "Unreachable": {
+        "Unreachable": "接続できません"
+    },
+    "Stop dynamic scene": {
+        "Stop dynamic scene": "ダイナミックシーンを停止"
+    },
+    "Play dynamic scene": {
+        "Play dynamic scene": "ダイナミックシーンを再生"
+    },
+    "Fade time": {
+        "Fade time": "フェード時間"
+    },
+    "How long lights take to turn on or off and to change scene": {
+        "How long lights take to turn on or off and to change scene": "ライトの点灯・消灯とシーン切り替えにかかる時間"
+    },
+    "Bridge default (0.4 s)": {
+        "Bridge default (0.4 s)": "Bridge の既定値（0.4 秒）"
+    },
+    "Instant": {
+        "Instant": "即時"
+    },
+    "%1 s": {
+        "%1 s": "%1 秒"
     }
 }

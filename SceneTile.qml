@@ -11,8 +11,12 @@ Rectangle {
     // Up to 3 colors (HueDirector.sceneColors); empty gives a neutral tile
     property var colors: []
     property bool active: false
+    // Scenes with a color palette can run as dynamic scenes (colors cycling slowly)
+    property bool dynamicCapable: false
+    property bool dynamicActive: false
 
     signal activated
+    signal dynamicToggled
 
     function stopColor(i) {
         return colors.length ? colors[Math.min(i, colors.length - 1)] : Theme.surfaceContainerHigh;
@@ -96,5 +100,35 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: tile.activated()
+    }
+
+    // Play/pause the dynamic palette; above the tile MouseArea so it gets its own clicks
+    Rectangle {
+        id: dynamicButton
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: Theme.spacingXS
+        width: 22
+        height: 22
+        radius: 11
+        visible: tile.dynamicCapable
+        color: Qt.rgba(0, 0, 0, dynamicMouse.containsMouse ? 0.55 : 0.35)
+        Accessible.role: Accessible.Button
+        Accessible.name: tile.dynamicActive ? I18n.trFor("hueDirector", "Stop dynamic scene") : I18n.trFor("hueDirector", "Play dynamic scene")
+
+        DIcon {
+            anchors.centerIn: parent
+            name: tile.dynamicActive ? "pause" : "play_arrow"
+            size: Theme.iconSizeSmall
+            color: "white"
+        }
+
+        MouseArea {
+            id: dynamicMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: tile.dynamicToggled()
+        }
     }
 }

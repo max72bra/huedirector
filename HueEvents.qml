@@ -19,16 +19,10 @@ PluginComponent {
     readonly property string shutdownMarker: "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hue-director-shutdown"
 
     function rule(e) {
-        const target = pluginData?.["event_" + e + "_target"] ?? "";
-        const sep = target.indexOf(":");
-        if (sep < 0)
+        const t = hueBridge.parseTarget(pluginData?.["event_" + e + "_target"]);
+        if (!t)
             return null;
-        const kind = target.slice(0, sep);
-        const id = target.slice(sep + 1);
-        // ids come from the bridge; anything else is ignored (they also end up in the logout hook file)
-        if ((kind !== "light" && kind !== "grouped_light") || !/^[0-9a-f-]+$/.test(id))
-            return null;
-        return { kind: kind, id: id, on: (pluginData?.["event_" + e + "_action"] ?? defaultActions[e]) === "on" };
+        return { kind: t.kind, id: t.id, on: (pluginData?.["event_" + e + "_action"] ?? defaultActions[e]) === "on" };
     }
 
     // done() is always called, also when there is no rule, so sleep/shutdown can release the inhibitor
@@ -47,7 +41,81 @@ PluginComponent {
 
     HueBridge {
         id: hueBridge
+        transitionMs: parseInt(root.pluginData?.transitionMs ?? "-1")
         onConfigChanged: root.syncLogoutHook()
+    }
+
+    // --- Command line / keybindings: dms ipc call hueDirector <function> [arg]
+    // Calls return at once; the request runs on fresh bridge state and failures go to the shell log
+    function withState(what, fn) {
+        if (!hueBridge.configured)
+            return "not paired";
+        hueBridge.fetchAll((state, err) => {
+            if (err)
+                console.warn("Hue Director: ipc", what, "failed:", err);
+            else
+                fn(state);
+        });
+        return "ok";
+    }
+
+    // "all", a room name or a light name (case-insensitive); rooms win over lights with the same name
+    function findTarget(name, state) {
+        const n = (name ?? "").trim().toLowerCase();
+        if (n === "all")
+            return state.homeGroupedId ? { kind: "grouped_light", id: state.homeGroupedId } : null;
+        const room = state.rooms.find(r => r.Name.toLowerCase() === n && r.GroupedLight);
+        if (room)
+            return { kind: "grouped_light", id: room.GroupedLight.HueData.id };
+        const light = state.lights.find(l => l.Name.toLowerCase() === n);
+        return light ? { kind: "light", id: light.Id } : null;
+    }
+
+    function setTarget(name, on) {
+        return withState(on ? "on" : "off", state => {
+            const t = findTarget(name, state);
+            if (t)
+                hueBridge.put(t.kind, t.id, { on: { on: on } }, err => err && console.warn("Hue Director: ipc", err));
+            else
+                console.warn("Hue Director: ipc: no room or light named", name);
+        });
+    }
+
+    IpcHandler {
+        target: "hueDirector"
+
+        // Toggles the favorite light, room or all lights (Settings → Favorite light)
+        function toggle(): string {
+            const t = hueBridge.parseTarget(root.pluginData?.favoriteLight);
+            if (!t)
+                return "no favorite light set";
+            return root.withState("toggle", state => hueBridge.put(t.kind, t.id, { on: { on: !hueBridge.targetIsOn(t, state) } }, err => err && console.warn("Hue Director: ipc", err)));
+        }
+
+        function on(target: string): string {
+            return root.setTarget(target, true);
+        }
+
+        function off(target: string): string {
+            return root.setTarget(target, false);
+        }
+
+        // "Scene" or "Room/Scene" when the name exists in several rooms (case-insensitive)
+        function scene(name: string): string {
+            return root.withState("scene", state => {
+                const parts = name.split("/");
+                const sceneName = parts.pop().trim().toLowerCase();
+                const roomName = parts.join("/").trim().toLowerCase();
+                const room = roomName ? state.rooms.find(r => r.Name.toLowerCase() === roomName) : null;
+                // no Array.flatMap in the shell's JS engine
+                const scenes = [].concat(...(room ? [room] : state.rooms).map(r => r.Scenes));
+                const sc = scenes.find(s => s.Name.toLowerCase() === sceneName);
+                if (sc)
+                    hueBridge.put("scene", sc.Id, { recall: { action: "active" } }, err => err && console.warn("Hue Director: ipc", err));
+                else
+                    console.warn("Hue Director: ipc: no scene named", name);
+            });
+        }
     }
 
     Component.onCompleted: {

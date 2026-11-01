@@ -24,6 +24,12 @@ Item {
 
     // Bodies waiting for the Proc debounce, per resource id (see put())
     property var pendingBodies: ({})
+    // Callbacks waiting for the next fetch: the Proc debounce runs only the last call, so earlier callers
+    // (e.g. two quick IPC commands) are kept here and all answered with the same result
+    property var fetchWaiters: []
+    // Fade time for on/off and scene recalls in ms (Hue "dynamics"); -1 leaves the bridge default (about 0.4 s).
+    // Sliders are not faded: a long fade would lag behind the drag
+    property int transitionMs: -1
 
     signal configChanged
 
@@ -99,13 +105,20 @@ Item {
     // cb(result, error): result is {rooms, lights} in the shape the UI uses,
     // error "" or "unpaired" or "certchanged" or a message
     function fetchAll(cb) {
+        fetchWaiters.push(cb);
         Proc.runCommand(procPrefix + "fetch", curlArgs("resource").concat(["-m", "10", "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+            const waiters = fetchWaiters;
+            fetchWaiters = [];
             const response = parseResponse(stdout, exitCode);
-            if (response.error) {
-                cb(null, response.error);
-                return;
+            const result = response.error ? null : normalize(response.body?.data ?? []);
+            // One failing caller must not keep the others waiting
+            for (const w of waiters) {
+                try {
+                    w(result, response.error);
+                } catch (e) {
+                    console.warn("Hue Director: fetch callback failed:", e);
+                }
             }
-            cb(normalize(response.body?.data ?? []), "");
         }, 200);
     }
 
@@ -119,7 +132,14 @@ Item {
         if (body.color_temperature)
             delete merged.color;
         pendingBodies[id] = merged;
-        Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(merged), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+        const sent = Object.assign({}, merged);
+        if (transitionMs >= 0) {
+            if (sent.recall)
+                sent.recall = Object.assign({}, sent.recall, { duration: transitionMs });
+            else if (sent.on && !sent.dimming && !sent.color && !sent.color_temperature)
+                sent.dynamics = { duration: transitionMs };
+        }
+        Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(sent), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
             delete pendingBodies[id];
             cb(parseResponse(stdout, exitCode).error);
         }, 300);
@@ -151,12 +171,14 @@ Item {
 
     // Joins flat v2 resources into the shape the UI was built on:
     // room {Id, Name, Archetype, GroupedLight.HueData, Scenes[] {Id, Name, HueData}},
-    // light {Id, Name, Archetype, HueData, Parent.Parent.Id = room}, homeGroupedId (all lights of the bridge)
+    // light {Id, Name, Archetype, HueData, Reachable, Parent.Parent.Id = room}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
         const deviceRoom = {};
         const groupedByRoom = {};
         let homeGroupedId = "";
         const scenesByRoom = {};
+        // zigbee_connectivity status per device: "connected", "disconnected", "connectivity_issue", ...
+        const deviceZigbee = {};
         for (const r of data) {
             if (r.type === "room")
                 for (const c of r.children ?? [])
@@ -164,6 +186,8 @@ Item {
                         deviceRoom[c.rid] = r.id;
             if (r.type === "grouped_light" && r.owner?.rtype === "room")
                 groupedByRoom[r.owner.rid] = r;
+            if (r.type === "zigbee_connectivity" && r.owner?.rtype === "device")
+                deviceZigbee[r.owner.rid] = r.status;
             if (r.type === "grouped_light" && r.owner?.rtype === "bridge_home")
                 homeGroupedId = r.id;
             if (r.type === "scene" && r.group?.rtype === "room")
@@ -181,9 +205,34 @@ Item {
             Name: l.metadata?.name ?? "",
             Archetype: l.metadata?.archetype ?? "",
             HueData: l,
+            // Lights without a zigbee_connectivity service (e.g. Matter/Wi-Fi) count as reachable
+            Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected",
             Parent: { Id: l.owner?.rid, Parent: { Id: deviceRoom[l.owner?.rid] } }
         }));
         return { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId };
+    }
+
+    // Saved targets ("grouped_light:<id>" or "light:<id>", settings and IPC) -> {kind, id}, or null.
+    // ids come from the bridge; anything else is rejected (they also end up in the logout hook file)
+    function parseTarget(target) {
+        const sep = (target ?? "").indexOf(":");
+        if (sep < 0)
+            return null;
+        const kind = target.slice(0, sep);
+        const id = target.slice(sep + 1);
+        if ((kind !== "light" && kind !== "grouped_light") || !/^[0-9a-f-]+$/.test(id))
+            return null;
+        return { kind: kind, id: id };
+    }
+
+    // Whether a target is on in a normalize() result. The home group counts as on when any light is on
+    function targetIsOn(t, state) {
+        if (t.kind === "light")
+            return state.lights.find(l => l.Id === t.id)?.HueData?.on?.on ?? false;
+        const room = state.rooms.find(r => r.GroupedLight?.HueData?.id === t.id);
+        if (room)
+            return room.GroupedLight.HueData.on?.on ?? false;
+        return t.id === state.homeGroupedId && state.lights.some(l => l.HueData?.on?.on);
     }
 
     // sRGB 0..1 -> CIE xy (Wide RGB D65 matrix from the Hue developer docs).

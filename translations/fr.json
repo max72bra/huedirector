@@ -208,5 +208,32 @@
     },
     "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
         "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "Bridge oublié sur cet ordinateur. Le bridge peut toutefois encore lister Hue Director parmi ses applications connectées."
+    },
+    "%1 unreachable": {
+        "%1 unreachable": "%1 injoignable(s)"
+    },
+    "Unreachable": {
+        "Unreachable": "Injoignable"
+    },
+    "Stop dynamic scene": {
+        "Stop dynamic scene": "Arrêter la scène dynamique"
+    },
+    "Play dynamic scene": {
+        "Play dynamic scene": "Lancer la scène dynamique"
+    },
+    "Fade time": {
+        "Fade time": "Durée du fondu"
+    },
+    "How long lights take to turn on or off and to change scene": {
+        "How long lights take to turn on or off and to change scene": "Temps mis par les lumières pour s'allumer, s'éteindre et changer de scène"
+    },
+    "Bridge default (0.4 s)": {
+        "Bridge default (0.4 s)": "Valeur du bridge (0,4 s)"
+    },
+    "Instant": {
+        "Instant": "Instantané"
+    },
+    "%1 s": {
+        "%1 s": "%1 s"
     }
 }

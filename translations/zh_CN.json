@@ -208,5 +208,32 @@
     },
     "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
         "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "已在此电脑上忘记 Bridge。Bridge 本身可能仍会在已连接的应用中列出 Hue Director。"
+    },
+    "%1 unreachable": {
+        "%1 unreachable": "%1 盏无法连接"
+    },
+    "Unreachable": {
+        "Unreachable": "无法连接"
+    },
+    "Stop dynamic scene": {
+        "Stop dynamic scene": "停止动态场景"
+    },
+    "Play dynamic scene": {
+        "Play dynamic scene": "播放动态场景"
+    },
+    "Fade time": {
+        "Fade time": "渐变时间"
+    },
+    "How long lights take to turn on or off and to change scene": {
+        "How long lights take to turn on or off and to change scene": "灯光开关和切换场景所需的时间"
+    },
+    "Bridge default (0.4 s)": {
+        "Bridge default (0.4 s)": "Bridge 默认（0.4 秒）"
+    },
+    "Instant": {
+        "Instant": "立即"
+    },
+    "%1 s": {
+        "%1 s": "%1 秒"
     }
 }

@@ -70,6 +70,21 @@ PluginSettings {
         defaultValue: "all"
     }
 
+    // Values are HueBridge.transitionMs; "-1" leaves the bridge default
+    SelectionSetting {
+        settingKey: "transitionMs"
+        label: I18n.trFor("hueDirector", "Fade time")
+        description: I18n.trFor("hueDirector", "How long lights take to turn on or off and to change scene")
+        options: [
+            { label: I18n.trFor("hueDirector", "Bridge default (0.4 s)"), value: "-1" },
+            { label: I18n.trFor("hueDirector", "Instant"), value: "0" },
+            { label: I18n.trFor("hueDirector", "%1 s").arg(1), value: "1000" },
+            { label: I18n.trFor("hueDirector", "%1 s").arg(2), value: "2000" },
+            { label: I18n.trFor("hueDirector", "%1 s").arg(4), value: "4000" }
+        ]
+        defaultValue: "-1"
+    }
+
     ToggleSetting {
         settingKey: "showLightCount"
         label: I18n.trFor("hueDirector", "Show lights on count")

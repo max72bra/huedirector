@@ -82,6 +82,7 @@ PluginComponent {
 
     HueBridge {
         id: hueBridge
+        transitionMs: parseInt(root.pluginData?.transitionMs ?? "-1")
         // New pairing: reconnect the event stream with the new key/bridge (refresh() restarts it)
         onConfigChanged: {
             root.eventsRestarts = 0;
@@ -148,22 +149,9 @@ PluginComponent {
     pillRightClickAction: () => toggleFavorite()
 
     function toggleFavorite() {
-        const target = pluginData?.favoriteLight ?? "";
-        const sep = target.indexOf(":");
-        if (sep < 0)
-            return;
-        const kind = target.slice(0, sep);
-        const id = target.slice(sep + 1);
-        let isOn = false;
-        if (kind === "light") {
-            isOn = lights.find(l => l.Id === id)?.HueData?.on?.on ?? false;
-        } else if (kind === "grouped_light") {
-            const room = rooms.find(r => r.GroupedLight?.HueData?.id === id);
-            isOn = room ? (room.GroupedLight.HueData.on?.on ?? false) : (id === homeGroupedId && lightsOn > 0);
-        } else {
-            return;
-        }
-        setResource(kind, id, { on: { on: !isOn } });
+        const t = hueBridge.parseTarget(pluginData?.favoriteLight);
+        if (t)
+            setResource(t.kind, t.id, { on: { on: !hueBridge.targetIsOn(t, { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId }) } });
     }
 
     function setColor(lightId, c) {
@@ -300,7 +288,7 @@ PluginComponent {
     }
 
     // Resource types shown by the widget; other events (sensors, connectivity, ...) don't refresh
-    readonly property var watchedTypes: ["light", "grouped_light", "scene", "room"]
+    readonly property var watchedTypes: ["light", "grouped_light", "scene", "room", "zigbee_connectivity"]
 
     // Live updates from the bridge event stream (SSE): relevant events trigger a refresh,
     // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
@@ -466,6 +454,8 @@ PluginComponent {
                                 readonly property var room: root.rooms[index]
                                 readonly property var roomLights: root.lights.filter(l => l.Parent?.Parent?.Id === room?.Id)
                                 readonly property int onCount: roomLights.filter(l => l.HueData?.on?.on).length
+                                readonly property int unreachableCount: roomLights.filter(l => !l.Reachable).length
+                                readonly property string unreachableText: unreachableCount ? " · " + I18n.trFor("hueDirector", "%1 unreachable").arg(unreachableCount) : ""
 
                                 width: parent.width
                                 name: room?.Name ?? ""
@@ -474,7 +464,7 @@ PluginComponent {
                                 brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
                                 dimmable: !!room?.GroupedLight?.HueData?.dimming
                                 accentColor: root.rgbColor(root.averageRgb(roomLights))
-                                subtitle: isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")
+                                subtitle: (isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")) + unreachableText
                                 onToggleRequested: on => root.setRoom(room, { on: { on: on } })
                                 onBrightnessRequested: value => root.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
                                 onClicked: root.openRoomId = room.Id
@@ -585,10 +575,18 @@ PluginComponent {
                                     name: scene?.Name ?? ""
                                     colors: root.sceneColors(scene)
                                     active: scene?.Id === (roomPage.pendingSceneId || roomPage.activeSceneId)
+                                    // Palette scenes can cycle their colors (Hue "dynamic" scenes)
+                                    dynamicCapable: (scene?.HueData?.palette?.color?.length ?? 0) > 1
+                                    dynamicActive: scene?.HueData?.status?.active === "dynamic_palette"
                                     onActivated: {
                                         roomPage.pendingSceneId = scene.Id;
                                         pendingSceneTimeout.restart();
                                         root.setResource("scene", scene.Id, { recall: { action: "active" } });
+                                    }
+                                    onDynamicToggled: {
+                                        roomPage.pendingSceneId = scene.Id;
+                                        pendingSceneTimeout.restart();
+                                        root.setResource("scene", scene.Id, { recall: { action: dynamicActive ? "static" : "dynamic_palette" } });
                                     }
                                 }
                             }

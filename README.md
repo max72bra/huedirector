@@ -10,7 +10,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 
 - **Bar pill**: lightbulb icon and number of lights on, for the whole home or a favorite room. Turns red when the bridge can't be reached. Right-click it to turn your favorite light on or off.
 - **Room cards**: one card per room with its icon, how many lights are on, an on/off switch and a brightness slider. Cards are tinted with the current color of the room's lights. A button turns off every light in the home.
-- **Room page**: click a card to open the room. Scenes are shown as tiles painted with the scene's own colors; the active scene is marked. Each light has its own switch and brightness slider.
+- **Room page**: click a card to open the room. Scenes are shown as tiles painted with the scene's own colors; the active scene is marked, and scenes with a color palette have a play button to run them as dynamic scenes. Each light has its own switch and brightness slider; unreachable lights (unplugged or out of range) are marked.
 - **Color**: click a light to show its color controls: color temperature (in Kelvin), a rainbow hue slider, and the shell color picker for any exact color (hex, color area, eyedropper, recent colors). Sliders are tinted with the current color of the light.
 - **Automations**: turn a light, a room or all lights on or off when you log in, lock or unlock the screen, the monitors turn off or on, suspend or resume, log out, power off or reboot. Set them up in the plugin settings (gear button in the popout).
 - **Live updates**: changes made from the Hue app or switches show up right away, through the bridge event stream. If the stream fails, the plugin falls back to polling every 30 seconds.
@@ -89,9 +89,30 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 
 - **Hue Bridge**: shows the paired bridge and lets you pair again.
 - **Favorite room**: room shown in the bar pill (icon and number of lights on). Default: all rooms.
+- **Fade time**: how long lights take to turn on or off and to change scene: the bridge default (0.4 s), instant, 1, 2 or 4 seconds. Brightness and color sliders are not faded.
 - **Show lights on count**: number next to the bar icon. Turn it off to keep only the icon, which still changes with the lights' state. Default: on.
 - **Favorite light**: a light, a room or all lights. Right-click the bar icon to turn it on or off.
 - **System events**: the automations described above.
+
+## Command line and keybindings
+
+The plugin answers `dms ipc` calls, so you can bind lights to keys:
+
+| Command | Effect |
+|---|---|
+| `dms ipc call hueDirector toggle` | Toggles the favorite light (Settings → Favorite light) |
+| `dms ipc call hueDirector on <target>` | Turns on `all`, a room or a light, by name |
+| `dms ipc call hueDirector off <target>` | Turns it off |
+| `dms ipc call hueDirector scene <name>` | Activates a scene; use `Room/Scene` when several rooms have a scene with that name |
+
+Names are case-insensitive; quote names with spaces. Example for Hyprland:
+
+```
+bind = SUPER, L, exec, dms ipc call hueDirector toggle
+bind = SUPER SHIFT, L, exec, dms ipc call hueDirector scene "Studio/Relax"
+```
+
+Calls return at once; if a name is not found, the shell log says so.
 
 ## Uninstall
 

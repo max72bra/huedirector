@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- Unreachable lights (unplugged or out of zigbee range) are marked in the light rows and counted on the room cards.
+- Dynamic scenes: scenes with a color palette get a play/pause button to cycle their colors.
+- Fade time setting for turning lights on/off and changing scene (instant to 4 s, or the bridge default).
+- Command line and keybindings: `dms ipc call hueDirector toggle | on <target> | off <target> | scene <name>`.
+
 ## 1.0.0
 
 First release.
