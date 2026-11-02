@@ -157,6 +157,10 @@ To add a language, copy `translations/it.json` to `translations/<locale>.json` (
 
 Room, light and scene names come from your Hue Bridge and are shown as they are.
 
+## Credits
+
+Hue Director is written by Massimo Branchini (maxb) together with Claude (Anthropic), used through Claude Code as an AI co-author: much of the code and documentation was generated with it, then reviewed and tested on real hardware by the author.
+
 ## License
 
 MIT
