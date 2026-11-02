@@ -32,7 +32,7 @@ PluginSettings {
     }
 
     // Width of the on/off buttons column (two small icon buttons)
-    readonly property int actionColumnWidth: 112
+    readonly property real actionColumnWidth: Theme.minimumTouchTargetSize * 2 + Theme.spacingL
 
     readonly property var events: [
         { key: "login", label: I18n.trFor("hueDirector", "Login"), def: "on" },

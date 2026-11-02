@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.5
+
+- Disabling or uninstalling the plugin removes the logout action and stops the `hue-director-session` unit, so the logout rule no longer fires at the end of that session. The pairing is kept for when the plugin is enabled again.
+- Scene tiles use the shell's state layer for hover and press (with ripple), and the theme's scrim and on-colors instead of fixed black and white.
+- Slider text on colored fills picks the more readable of the theme's text and surface colors.
+- Sizes of tiles, icon bubbles, settings columns and the popout come from the theme's size tokens.
+- The description says that pairing may look the bridge up through `discovery.meethue.com`.
+
 ## 1.2.4
 
 - Power off and reboot rules survive logout scripts that kill the user's processes before calling `systemctl poweroff`/`reboot`: the lock that makes the system wait for the lights is started again if its process is killed.

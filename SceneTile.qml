@@ -17,6 +17,10 @@ Rectangle {
     // Smart scene (changes with the time of day): marked with a clock badge
     property bool smart: false
 
+    // Text and icons sit on the scrim, over any scene color: always the light on-color
+    readonly property color onScrim: Theme.contrastLight
+    readonly property color badgeColor: Theme.withAlpha(Theme.scrimColor, 0.35)
+
     signal activated
     signal dynamicToggled
 
@@ -24,9 +28,9 @@ Rectangle {
         return colors.length ? colors[Math.min(i, colors.length - 1)] : Theme.surfaceContainerHigh;
     }
 
-    height: 60
+    height: Theme.listItemHeight + Theme.spacingXS
     radius: Theme.cornerRadius
-    border.width: active ? 2 : 0
+    border.width: active ? Theme.outlineWidthFocused : 0
     border.color: Theme.primary
     Accessible.role: Accessible.Button
     Accessible.name: name
@@ -48,7 +52,7 @@ Rectangle {
         }
     }
 
-    // Darkens the bottom so the white name stays readable on light palettes (bright white scenes)
+    // Darkens the bottom so the name stays readable on light palettes (bright white scenes)
     Rectangle {
         anchors.fill: parent
         anchors.margins: tile.border.width
@@ -60,16 +64,9 @@ Rectangle {
             }
             GradientStop {
                 position: 1
-                color: Qt.rgba(0, 0, 0, 0.55)
+                color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
             }
         }
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        radius: tile.radius
-        color: "white"
-        opacity: mouse.pressed ? 0.25 : (mouse.containsMouse ? 0.12 : 0)
     }
 
     StyledText {
@@ -83,7 +80,7 @@ Rectangle {
         wrapMode: Text.WordWrap
         font.pixelSize: Theme.fontSizeSmall
         font.weight: Font.Medium
-        color: "white"
+        color: tile.onScrim
     }
 
     DIcon {
@@ -93,14 +90,11 @@ Rectangle {
         visible: tile.active
         name: "check_circle"
         size: Theme.iconSizeSmall
-        color: "white"
+        color: tile.onScrim
     }
 
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+    StateLayer {
+        stateColor: tile.onScrim
         onClicked: tile.activated()
     }
 
@@ -108,31 +102,31 @@ Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.margins: Theme.spacingXS
-        width: 22
-        height: 22
-        radius: 11
+        width: Theme.iconSize
+        height: width
+        radius: width / 2
         visible: tile.smart
-        color: Qt.rgba(0, 0, 0, 0.35)
+        color: tile.badgeColor
 
         DIcon {
             anchors.centerIn: parent
             name: "schedule"
             size: Theme.iconSizeSmall
-            color: "white"
+            color: tile.onScrim
         }
     }
 
-    // Play/pause the dynamic palette; above the tile MouseArea so it gets its own clicks
+    // Play/pause the dynamic palette; above the tile StateLayer so it gets its own clicks
     Rectangle {
         id: dynamicButton
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.margins: Theme.spacingXS
-        width: 22
-        height: 22
-        radius: 11
+        width: Theme.iconSize
+        height: width
+        radius: width / 2
         visible: tile.dynamicCapable
-        color: Qt.rgba(0, 0, 0, dynamicMouse.containsMouse ? 0.55 : 0.35)
+        color: tile.badgeColor
         Accessible.role: Accessible.Button
         Accessible.name: tile.dynamicActive ? I18n.trFor("hueDirector", "Stop dynamic scene") : I18n.trFor("hueDirector", "Play dynamic scene")
 
@@ -140,14 +134,11 @@ Rectangle {
             anchors.centerIn: parent
             name: tile.dynamicActive ? "pause" : "play_arrow"
             size: Theme.iconSizeSmall
-            color: "white"
+            color: tile.onScrim
         }
 
-        MouseArea {
-            id: dynamicMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
+        StateLayer {
+            stateColor: tile.onScrim
             onClicked: tile.dynamicToggled()
         }
     }

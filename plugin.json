@@ -2,8 +2,8 @@
     "$schema": "https://duxlabs.dev/schemas/plugin.json",
     "id": "hueDirector",
     "name": "Hue Director",
-    "description": "Control Philips Hue lights, rooms and scenes from the Dux Shell bar, with automations on login, lock, monitor power, sleep, logout, reboot and power off. Talks directly to the Hue Bridge (API v2).",
-    "version": "1.2.4",
+    "description": "Control Philips Hue lights, rooms and scenes from the Dux Shell bar, with automations on login, lock, monitor power, sleep, logout, reboot and power off. Talks to the Hue Bridge on the local network (API v2); if the bridge isn't found there, pairing looks it up through discovery.meethue.com.",
+    "version": "1.2.5",
     "author": "maxb",
     "type": "composite",
     "capabilities": [

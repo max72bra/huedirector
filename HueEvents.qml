@@ -535,7 +535,14 @@ PluginComponent {
         }
     }
 
-    Component.onDestruction: inhibitor.running = false
+    // Also runs on shell exit and logout, when the logout hook must stay. Only a disabled or uninstalled
+    // plugin (enabled turned false before the unload, or plugin.json gone) removes it; bridge.conf is kept
+    Component.onDestruction: {
+        inhibitor.running = false;
+        Proc.runCommand("hueDirector.events.unload", ["sh", "-c", "[ \"$3\" = true ] && [ -f \"$2\" ] && exit 0\n"
+            + "rm -f \"$1/logout.action\"\nsystemctl --user stop hue-director-session 2>/dev/null\nexit 0\n",
+            "sh", Paths.strip(Paths.state) + "/plugins/hueDirector", Paths.strip(Qt.resolvedUrl("plugin.json")), String(SettingsData.getPluginSetting("hueDirector", "enabled", false))], () => {}, 0);
+    }
 
     // --- Delay inhibitor: logind waits for it (up to InhibitDelayMaxSec, 5 s by default) before sleep or
     // power off, so the PUT can reach the bridge. Released as soon as the rule has run

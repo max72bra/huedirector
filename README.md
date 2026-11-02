@@ -137,6 +137,8 @@ Each call answers `ok`, or says what is wrong (e.g. `no scene named Relax`, `not
 1. Open Settings → Plugins → Hue Director and click **Forget bridge** twice. This removes the pairing key, the logout action and the `hue-director-session` user service from this computer.
 2. Disable and uninstall the plugin in Settings → Plugins.
 
+Disabling the plugin alone also removes the logout action and the user service, but keeps the pairing key, so the plugin works again as soon as it is enabled.
+
 If the plugin is already gone, remove the leftovers by hand:
 
 ```sh

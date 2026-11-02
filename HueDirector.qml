@@ -518,7 +518,7 @@ PluginComponent {
         }
     }
 
-    popoutWidth: 420
+    popoutWidth: Theme.listItemHeight * 7.5
     // Initial size only: PluginPopout then follows the content height (see the pages Item)
     popoutHeight: 520
 }

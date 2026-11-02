@@ -44,9 +44,9 @@ DCard {
 
             Rectangle {
                 id: iconBubble
-                width: 40
-                height: 40
-                radius: 20
+                width: Theme.iconButtonSize
+                height: width
+                radius: width / 2
                 anchors.verticalCenter: parent.verticalCenter
                 color: card.isOn ? Qt.rgba(card.accentColor.r, card.accentColor.g, card.accentColor.b, 0.3) : Theme.surfaceContainerHigh
 
@@ -98,7 +98,7 @@ DCard {
             endIcon: "brightness_high"
             reported: card.brightness
             fillColor: card.visibleAccent
-            fillTextColor: Accent.textOn(card.visibleAccent)
+            fillTextColor: Accent.textOn(card.visibleAccent, Theme.surfaceText, Theme.surface)
             onRequested: value => card.brightnessRequested(value)
         }
     }

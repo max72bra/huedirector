@@ -62,16 +62,16 @@ DCard {
 
             Rectangle {
                 id: iconBubble
-                width: 32
-                height: 32
-                radius: 16
+                width: Theme.iconSizeLarge
+                height: width
+                radius: width / 2
                 anchors.verticalCenter: parent.verticalCenter
                 color: row.isOn ? Qt.rgba(row.accentColor.r, row.accentColor.g, row.accentColor.b, 0.3) : Theme.surfaceContainerHigh
 
                 DIcon {
                     anchors.centerIn: parent
                     name: row.reachable ? row.icon : "link_off"
-                    size: Theme.iconSize - 4
+                    size: Theme.iconSizeMedium
                     color: row.isOn ? row.visibleAccent : Theme.surfaceVariantText
                 }
             }
@@ -133,7 +133,7 @@ DCard {
             endIcon: "brightness_high"
             reported: Math.round(row.hd?.dimming?.brightness ?? 0)
             fillColor: row.visibleAccent
-            fillTextColor: Accent.textOn(row.visibleAccent)
+            fillTextColor: Accent.textOn(row.visibleAccent, Theme.surfaceText, Theme.surface)
             onRequested: value => row.brightnessRequested(value)
         }
 
@@ -171,7 +171,7 @@ DCard {
                 // Kelvin -> mirek -> Kelvin rounding drifts up to ~50K at the cold end
                 tolerance: 100
                 fillColor: row.visibleAccent
-                fillTextColor: Accent.textOn(row.visibleAccent)
+                fillTextColor: Accent.textOn(row.visibleAccent, Theme.surfaceText, Theme.surface)
                 onRequested: value => row.temperatureRequested(Math.round(1e6 / value))
             }
 

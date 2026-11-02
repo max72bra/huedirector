@@ -16,7 +16,7 @@ function visible(c, bg) {
     return c;
 }
 
-// Dark text on light fills, light text on dark ones
-function textOn(c) {
-    return luminance(c) > 0.5 ? "#000000" : "#FFFFFF";
+// Whichever of the theme colors a and b (e.g. Theme.surfaceText, Theme.surface) stands out more on c
+function textOn(c, a, b) {
+    return Math.abs(luminance(a) - luminance(c)) >= Math.abs(luminance(b) - luminance(c)) ? a : b;
 }

@@ -27,3 +27,5 @@ Manual checks before a release. Watch the shell log for `hueDirector` errors: `/
 
 ## Uninstall
 - [ ] "Forget bridge" (two clicks) removes the state folder and the `hue-director-session` unit, and does not switch any light.
+- [ ] With a logout rule set, disabling the plugin removes `logout.action` and stops `hue-director-session` without switching any light; `bridge.conf` stays, and re-enabling works without pairing. `dms restart` with the plugin enabled keeps `logout.action`.
+- [ ] Scene tiles, room cards and light rows in a dark and a light theme: hover/press state layer, readable slider text on white and dark lights.
