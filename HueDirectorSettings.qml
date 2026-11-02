@@ -178,7 +178,7 @@ PluginSettings {
                 text: eventRow.modelData.label
                 options: targetLabels
                 // loadValue reads SettingsData.pluginSettings, so this follows saves and the late pluginService
-                currentValue: targetLabels[Math.max(0, targetValues.indexOf(root.loadValue(targetKey, "none")))]
+                currentValue: targetLabels[Math.max(0, targetValues.indexOf(root.loadValue(targetKey, "none")))] ?? ""
                 onValueChanged: newValue => {
                     const i = targetLabels.indexOf(newValue);
                     if (i >= 0)

@@ -201,7 +201,7 @@ PluginComponent {
             DIcon {
                 anchors.verticalCenter: parent.verticalCenter
                 name: root.pillIcon
-                size: Theme.iconSize - 7
+                size: root.iconSize
                 color: root.pillColor
             }
 
@@ -222,7 +222,7 @@ PluginComponent {
             DIcon {
                 anchors.horizontalCenter: parent.horizontalCenter
                 name: root.pillIcon
-                size: Theme.iconSize - 7
+                size: root.iconSize
                 color: root.pillColor
             }
 
@@ -520,5 +520,5 @@ PluginComponent {
 
     popoutWidth: Theme.listItemHeight * 7.5
     // Initial size only: PluginPopout then follows the content height (see the pages Item)
-    popoutHeight: 520
+    popoutHeight: Theme.listItemHeight * 9
 }

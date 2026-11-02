@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.6
+
+- The bar icon follows the bar's icon size and scale, the initial popout height comes from the theme's size tokens, and the room card color fade follows the shell's animation speed.
+- The description says that pairing uses avahi-browse when installed.
+
 ## 1.2.5
 
 - Disabling or uninstalling the plugin removes the logout action and stops the `hue-director-session` unit, so the logout rule no longer fires at the end of that session. The pairing is kept for when the plugin is enabled again.

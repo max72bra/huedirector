@@ -29,7 +29,7 @@ DCard {
 
     Behavior on color {
         ColorAnimation {
-            duration: 250
+            duration: Theme.longDuration
         }
     }
 
