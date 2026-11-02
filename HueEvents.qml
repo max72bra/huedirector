@@ -494,6 +494,7 @@ PluginComponent {
             if (id) {
                 shutdownSubscriptionId = id;
                 shutdownHasMetadata = member === "PrepareForShutdownWithMetadata";
+                console.info("Hue Director: watching power off/reboot through", member);
             } else {
                 onFail(response.error);
             }
@@ -523,6 +524,7 @@ PluginComponent {
             }
             if (!subscriptionId || subscriptionId !== root.shutdownSubscriptionId)
                 return;
+            console.info("Hue Director: logind shutdown signal", JSON.stringify(data?.body ?? []));
             if (data?.body?.[0] === true) {
                 Proc.runCommand("hueDirector.events.marker", ["sh", "-c", ": > \"" + root.shutdownMarker + "\""], () => {}, 0);
                 root.run(root.shutdownEvent(data.body), () => inhibitor.released = true);
@@ -542,9 +544,20 @@ PluginComponent {
 
         property bool released: false
         readonly property string what: [root.rule("sleep") ? "sleep" : "", root.rule("shutdown") || root.rule("reboot") ? "shutdown" : ""].filter(w => w).join(":")
+        readonly property bool wanted: what !== "" && hueBridge.configured && !released
 
-        running: what !== "" && hueBridge.configured && !released
+        running: wanted
         command: ["systemd-inhibit", "--what=" + what, "--mode=delay", "--who=Hue Director", "--why=Set the lights before sleep or power off", "sleep", "infinity"]
+        // Logout scripts that kill the user's processes before calling systemctl poweroff/reboot take
+        // "sleep" down too, which drops the lock. Started again at once: a new process usually escapes
+        // such scripts, which collect the processes to kill up front
+        onExited: if (wanted) inhibitorRestart.restart()
+    }
+
+    Timer {
+        id: inhibitorRestart
+        interval: 1000
+        onTriggered: if (inhibitor.wanted && !inhibitor.running) inhibitor.running = true
     }
 
     // --- Logout: the shell dies with the session, so a transient user unit bound to graphical-session.target

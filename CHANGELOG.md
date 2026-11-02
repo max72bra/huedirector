@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.4
+
+- Power off and reboot rules survive logout scripts that kill the user's processes before calling `systemctl poweroff`/`reboot`: the lock that makes the system wait for the lights is started again if its process is killed.
+- The shell log shows when power off/reboot are being watched and when logind's signal arrives.
+
 ## 1.2.3
 
 - System event targets in the settings are saved again and show the stored value: as dropdowns nested in a list they were neither reloaded nor able to reach the page to save on.
