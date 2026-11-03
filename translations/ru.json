@@ -1,0 +1,302 @@
+{
+    "Hue Bridge not reachable": {
+        "Hue Bridge not reachable": "Hue Bridge недоступен"
+    },
+    "Request failed (curl exit %1)": {
+        "Request failed (curl exit %1)": "Запрос не выполнен (код выхода curl %1)"
+    },
+    "Bridge error (HTTP %1)": {
+        "Bridge error (HTTP %1)": "Ошибка моста (HTTP %1)"
+    },
+    "The bridge identity changed: pair again": {
+        "The bridge identity changed: pair again": "Идентификатор моста изменился: выполните сопряжение заново"
+    },
+    "%1 of %2 lights on": {
+        "%1 of %2 lights on": "Включено ламп: %1 из %2"
+    },
+    "Loading…": {
+        "Loading…": "Загрузка…"
+    },
+    "Settings and automations": {
+        "Settings and automations": "Настройки и автоматизация"
+    },
+    "Turn off all lights": {
+        "Turn off all lights": "Выключить все лампы"
+    },
+    "%1 of %2 on · %3%": {
+        "%1 of %2 on · %3%": "Вкл.: %1 из %2 · %3%"
+    },
+    "Off": {
+        "Off": "Выкл."
+    },
+    "All rooms": {
+        "All rooms": "Все комнаты"
+    },
+    "Scenes": {
+        "Scenes": "Сцены"
+    },
+    "Lights": {
+        "Lights": "Лампы"
+    },
+    "Login": {
+        "Login": "Вход в систему"
+    },
+    "Logout": {
+        "Logout": "Выход из системы"
+    },
+    "Screen locked": {
+        "Screen locked": "Экран заблокирован"
+    },
+    "Screen unlocked": {
+        "Screen unlocked": "Экран разблокирован"
+    },
+    "Suspend or hibernate": {
+        "Suspend or hibernate": "Ждущий режим или гибернация"
+    },
+    "Resume from sleep": {
+        "Resume from sleep": "Выход из спящего режима"
+    },
+    "Reboot": {
+        "Reboot": "Перезагрузка"
+    },
+    "Power off": {
+        "Power off": "Выключение"
+    },
+    "Room · %1": {
+        "Room · %1": "Комната · %1"
+    },
+    "Light · %1": {
+        "Light · %1": "Лампа · %1"
+    },
+    "All lights": {
+        "All lights": "Все лампы"
+    },
+    "Hue Bridge": {
+        "Hue Bridge": "Hue Bridge"
+    },
+    "Favorite room": {
+        "Favorite room": "Избранная комната"
+    },
+    "Room shown in the bar pill (icon and lights on count)": {
+        "Room shown in the bar pill (icon and lights on count)": "Комната, показываемая на панели (значок и число включённых ламп)"
+    },
+    "System events": {
+        "System events": "Системные события"
+    },
+    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Включайте или выключайте лампу, комнату или все лампы, когда в сеансе что-то происходит. Правила выхода из системы требуют сеанса под управлением systemd (например, uwsm). Перед ждущим режимом и выключением система несколько секунд ждёт, пока лампы будут настроены."
+    },
+    "Nothing": {
+        "Nothing": "Ничего"
+    },
+    "Action": {
+        "Action": "Действие"
+    },
+    "Turn off": {
+        "Turn off": "Выключить"
+    },
+    "Turn on": {
+        "Turn on": "Включить"
+    },
+    "Hide color controls": {
+        "Hide color controls": "Скрыть настройки цвета"
+    },
+    "Color and temperature": {
+        "Color and temperature": "Цвет и температура"
+    },
+    "More colors…": {
+        "More colors…": "Другие цвета…"
+    },
+    "Looking for the Hue Bridge…": {
+        "Looking for the Hue Bridge…": "Поиск Hue Bridge…"
+    },
+    "Connecting to the bridge at %1…": {
+        "Connecting to the bridge at %1…": "Подключение к мосту %1…"
+    },
+    "Hue Bridge not found: enter its IP address": {
+        "Hue Bridge not found: enter its IP address": "Hue Bridge не найден: введите его IP-адрес"
+    },
+    "Hue Bridge not reachable at this address": {
+        "Hue Bridge not reachable at this address": "Hue Bridge недоступен по этому адресу"
+    },
+    "No Hue Bridge at this address": {
+        "No Hue Bridge at this address": "По этому адресу нет Hue Bridge"
+    },
+    "Pairing failed": {
+        "Pairing failed": "Сопряжение не удалось"
+    },
+    "Paired with the Hue Bridge": {
+        "Paired with the Hue Bridge": "Сопряжение с Hue Bridge выполнено"
+    },
+    "Pairing cancelled": {
+        "Pairing cancelled": "Сопряжение отменено"
+    },
+    "The bridge button was not pressed within %1 seconds": {
+        "The bridge button was not pressed within %1 seconds": "Кнопка на мосту не была нажата в течение %1 с"
+    },
+    "Pairing failed (exit %1)": {
+        "Pairing failed (exit %1)": "Сопряжение не удалось (код выхода %1)"
+    },
+    "Paired with the bridge at %1": {
+        "Paired with the bridge at %1": "Сопряжено с мостом %1"
+    },
+    "Not paired with a Hue Bridge": {
+        "Not paired with a Hue Bridge": "Нет сопряжения с Hue Bridge"
+    },
+    "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": {
+        "Pair again after resetting or replacing the bridge, or if its IP address changed. The saved key is replaced only if pairing succeeds.": "Выполните сопряжение заново после сброса или замены моста либо если изменился его IP-адрес. Сохранённый ключ заменяется только при успешном сопряжении."
+    },
+    "Click Pair, then press the round button on top of your Hue Bridge.": {
+        "Click Pair, then press the round button on top of your Hue Bridge.": "Нажмите «Сопрячь», затем нажмите круглую кнопку сверху на Hue Bridge."
+    },
+    "Bridge IP address (optional)": {
+        "Bridge IP address (optional)": "IP-адрес моста (необязательно)"
+    },
+    "Auto-discover": {
+        "Auto-discover": "Автопоиск"
+    },
+    "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": {
+        "Leave empty to find the bridge automatically. The IP is shown in the Hue app under Settings → Bridges.": "Оставьте пустым, чтобы найти мост автоматически. IP-адрес указан в приложении Hue в разделе «Настройки → Мосты»."
+    },
+    "Enter an IPv4 address, e.g. 192.168.1.20": {
+        "Enter an IPv4 address, e.g. 192.168.1.20": "Введите адрес IPv4, например 192.168.1.20"
+    },
+    "Pair again": {
+        "Pair again": "Сопрячь заново"
+    },
+    "Pair": {
+        "Pair": "Сопрячь"
+    },
+    "Cancel": {
+        "Cancel": "Отмена"
+    },
+    "Press the button on your Hue Bridge now (%1 s left)": {
+        "Press the button on your Hue Bridge now (%1 s left)": "Нажмите кнопку на Hue Bridge сейчас (осталось %1 с)"
+    },
+    "Missing: %1": {
+        "Missing: %1": "Отсутствует: %1"
+    },
+    "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": {
+        "Hue Director talks to the Hue Bridge with curl and checks its certificate with openssl.\n\nInstall the missing packages with your package manager, then re-enable this plugin.": "Hue Director обращается к Hue Bridge через curl и проверяет его сертификат с помощью openssl.\n\nУстановите недостающие пакеты через менеджер пакетов, затем снова включите этот плагин."
+    },
+    "Event and target": {
+        "Event and target": "Событие и цель"
+    },
+    "Favorite light": {
+        "Favorite light": "Избранная лампа"
+    },
+    "Right-click the bar icon to turn it on or off": {
+        "Right-click the bar icon to turn it on or off": "Щёлкните правой кнопкой по значку на панели, чтобы включить или выключить её"
+    },
+    "Monitors off": {
+        "Monitors off": "Мониторы выключены"
+    },
+    "Monitors on": {
+        "Monitors on": "Мониторы включены"
+    },
+    "Show lights on count": {
+        "Show lights on count": "Показывать число включённых ламп"
+    },
+    "Number next to the bar icon; when off, only the icon shows the state": {
+        "Number next to the bar icon; when off, only the icon shows the state": "Число рядом со значком на панели; если выключено, состояние показывает только значок"
+    },
+    "Forget bridge": {
+        "Forget bridge": "Забыть мост"
+    },
+    "Click again to confirm": {
+        "Click again to confirm": "Щёлкните ещё раз для подтверждения"
+    },
+    "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": {
+        "Bridge forgotten on this computer. The bridge itself may still list Hue Director among its connected apps.": "Мост забыт на этом компьютере. Сам мост может по-прежнему показывать Hue Director среди подключённых приложений."
+    },
+    "%1 unreachable": {
+        "%1 unreachable": "Недоступно: %1"
+    },
+    "Unreachable": {
+        "Unreachable": "Недоступна"
+    },
+    "Stop dynamic scene": {
+        "Stop dynamic scene": "Остановить динамическую сцену"
+    },
+    "Play dynamic scene": {
+        "Play dynamic scene": "Запустить динамическую сцену"
+    },
+    "Fade time": {
+        "Fade time": "Время перехода"
+    },
+    "How long lights take to turn on or off and to change scene": {
+        "How long lights take to turn on or off and to change scene": "Сколько времени лампам нужно, чтобы включиться, выключиться или сменить сцену"
+    },
+    "Bridge default (0.4 s)": {
+        "Bridge default (0.4 s)": "По умолчанию моста (0,4 с)"
+    },
+    "Instant": {
+        "Instant": "Мгновенно"
+    },
+    "%1 s": {
+        "%1 s": "%1 с"
+    },
+    "Identify": {
+        "Identify": "Найти"
+    },
+    "No effect": {
+        "No effect": "Без эффекта"
+    },
+    "Candle": {
+        "Candle": "Свеча"
+    },
+    "Fireplace": {
+        "Fireplace": "Камин"
+    },
+    "Prism": {
+        "Prism": "Призма"
+    },
+    "Sparkle": {
+        "Sparkle": "Искры"
+    },
+    "Opal": {
+        "Opal": "Опал"
+    },
+    "Glisten": {
+        "Glisten": "Блеск"
+    },
+    "Underwater": {
+        "Underwater": "Под водой"
+    },
+    "Cosmos": {
+        "Cosmos": "Космос"
+    },
+    "Sunbeam": {
+        "Sunbeam": "Солнечный луч"
+    },
+    "Enchant": {
+        "Enchant": "Волшебство"
+    },
+    "Sunrise": {
+        "Sunrise": "Рассвет"
+    },
+    "Sunset": {
+        "Sunset": "Закат"
+    },
+    "Dynamic scene speed": {
+        "Dynamic scene speed": "Скорость динамических сцен"
+    },
+    "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": {
+        "How fast colors cycle when you play a scene. The speed is saved in the scene, also for the Hue app": "Как быстро меняются цвета при запуске сцены. Скорость сохраняется в сцене, в том числе для приложения Hue"
+    },
+    "Scene default": {
+        "Scene default": "По умолчанию сцены"
+    },
+    "Slow": {
+        "Slow": "Медленно"
+    },
+    "Medium": {
+        "Medium": "Средне"
+    },
+    "Fast": {
+        "Fast": "Быстро"
+    },
+    "Effect": {
+        "Effect": "Эффект"
+    }
+}

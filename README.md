@@ -31,7 +31,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | scene`. See [Command line and keybindings](#command-line-and-keybindings).
 - **One connection to the bridge** for the whole shell, also with a bar on every monitor.
 - **No external Hue tools**: the plugin talks to the bridge directly (Hue API v2), with in-shell pairing and certificate pinning.
-- **Translations**: English, French, German, Italian, Japanese, Korean, Simplified Chinese, Spanish.
+- **Translations**: English, French, German, Italian, Japanese, Korean, Russian, Simplified Chinese, Spanish.
 
 The plugin talks only to your Hue Bridge. The only internet request is bridge discovery through `discovery.meethue.com`, and only when the bridge isn't found on the local network.
 
@@ -153,7 +153,7 @@ The bridge may still list Hue Director among its connected apps.
 
 ## Translations
 
-The interface is in English and follows the Dux Shell language (Settings → Locale). Available translations: French, German, Italian, Japanese, Korean, Simplified Chinese and Spanish (`translations/`). They were machine-assisted: corrections from native speakers are welcome.
+The interface is in English and follows the Dux Shell language (Settings → Locale). Available translations: French, German, Italian, Japanese, Korean, Russian, Simplified Chinese and Spanish (`translations/`). They were machine-assisted: corrections from native speakers are welcome.
 
 To add a language, copy `translations/it.json` to `translations/<locale>.json` (e.g. `de.json`, `pt_BR.json`) and translate the values. Each key is the English text; placeholders like `%1` must stay in the translation. Missing terms fall back to English. Reload with `dms ipc call plugins reload hueDirector`.
 

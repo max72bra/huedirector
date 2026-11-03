@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.7
+
+- Russian translation.
+
 ## 1.2.6
 
 - The bar icon follows the bar's icon size and scale, the initial popout height comes from the theme's size tokens, and the room card color fade follows the shell's animation speed.
