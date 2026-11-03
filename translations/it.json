@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "Segmenti"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "Aree di intrattenimento"
+    },
+    "In use by another app": {
+        "In use by another app": "In uso da un'altra app"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "Sync sfondo attivo · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "Sync sfondo spento"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "Impossibile leggere lo sfondo"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "Ripristina il sync dello sfondo all'avvio"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Riavvia il sync dello sfondo all'avvio della shell, sull'area di intrattenimento dove era attivo"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "Monitor del sync sfondo"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "Monitor di cui l'area di intrattenimento segue lo sfondo"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "Sync sfondo"
+    },
+    "Leave as is": {
+        "Leave as is": "Lascia così"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "Quando il sync si ferma, le luci tornano come erano. Se non è noto, ogni area di intrattenimento fa questo:"
+    },
+    "Warm white": {
+        "Warm white": "Luce bianca calda"
     }
 }

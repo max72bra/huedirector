@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+- Wallpaper sync: "Entertainment areas" cards in the popout. The switch makes the area's lights continue the wallpaper beyond the screen, each light with the dominant color of the wallpaper where it stands (gradient strips get one color per segment); the slider sets one brightness for all of them. Stopping the sync puts the lights back as they were (if that is unknown, a per-area setting turns them off, leaves them, sets warm white or activates one of the scenes using them). Follows wallpaper changes, skips areas used by another app, can restart with the shell (Settings), and has `sync` / `syncOff` IPC calls. The wallpaper is read by the bar widget with no external tools, so the sync needs the widget on a bar.
+- Cards with a gradient light on show its colors along the card in soft pastel tones, in place of the flat tint; entertainment area cards place each light's color at its position in the area.
+- Better contrast in light and dark themes: icons, slider fills and the header chip tinted with a light's color reach at least 3:1 (WCAG) against what they are drawn on, room and light icons included on their colored bubble.
+
 ## 1.4.0
 
 - Gradient lights: edit each of the colors along the light (as many as the light supports) and pick the gradient style.

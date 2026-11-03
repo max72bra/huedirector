@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "Segmente"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "Entertainment-Bereiche"
+    },
+    "In use by another app": {
+        "In use by another app": "Von einer anderen App verwendet"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "Hintergrund-Sync an · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "Hintergrund-Sync aus"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "Hintergrundbild kann nicht gelesen werden"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "Hintergrund-Sync beim Start wiederherstellen"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Startet den Hintergrund-Sync beim Start der Shell erneut, im Entertainment-Bereich, in dem er aktiv war"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "Monitor für Hintergrund-Sync"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "Monitor, dessen Hintergrundbild der Entertainment-Bereich folgt"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "Hintergrund-Sync"
+    },
+    "Leave as is": {
+        "Leave as is": "So lassen"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "Wenn der Sync endet, kehren die Lampen in ihren vorherigen Zustand zurück. Ist dieser unbekannt, macht jeder Entertainment-Bereich stattdessen Folgendes:"
+    },
+    "Warm white": {
+        "Warm white": "Warmweiß"
     }
 }

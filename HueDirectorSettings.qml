@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -15,9 +16,13 @@ PluginSettings {
     property var roomOptions: []
     // Targets for the system event rules and the favorite light, values as read by HueBridge.parseTarget()
     property var targetOptions: []
+    // Wallpaper sync end per entertainment area: {areaId: [{label, value "off" | "none" | "warm" | "scene:<id>"}]}
+    property var syncEndOptions: ({})
+    // Areas as of the last rebuild, so the rows below aren't recreated (and closed) on every refresh
+    property var syncAreas: []
     // Ids and names only: the options are rebuilt when these change, not on every brightness event,
     // which would reset a dropdown while it is open
-    readonly property string optionsKey: JSON.stringify([hue?.homeGroupedId ?? "", (hue?.rooms ?? []).concat(hue?.zones ?? []).map(r => [r.Id, r.Name, r.GroupedLight?.HueData?.id ?? ""]), (hue?.lights ?? []).map(l => [l.Id, l.Name])])
+    readonly property string optionsKey: JSON.stringify([hue?.homeGroupedId ?? "", (hue?.rooms ?? []).concat(hue?.zones ?? []).map(r => [r.Id, r.Name, r.GroupedLight?.HueData?.id ?? "", r.Scenes.map(sc => [sc.Id, sc.Name])]), (hue?.lights ?? []).map(l => [l.Id, l.Name]), (hue?.areas ?? []).map(a => [a.Id, a.Name, a.LightIds])])
 
     onOptionsKeyChanged: rebuildOptions()
     Component.onCompleted: rebuildOptions()
@@ -32,6 +37,17 @@ PluginSettings {
         const lights = (hue?.lights ?? []).map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
         const home = hue?.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + hue.homeGroupedId }] : [];
         targetOptions = home.concat(rooms, zones, lights);
+        // Only scenes that set at least one light of the area. Labels are matched back to values, so
+        // a scene name found in several rooms gets the room name
+        const groups = (hue?.rooms ?? []).concat(hue?.zones ?? []);
+        const endOptions = {};
+        for (const area of hue?.areas ?? []) {
+            const scenes = [].concat(...groups.map(r => r.Scenes.filter(sc => (sc.HueData.actions ?? []).some(a => area.LightIds.includes(a.target?.rid))).map(sc => ({ name: sc.Name, group: r.Name, value: "scene:" + sc.Id }))));
+            const label = sc => scenes.filter(o => o.name === sc.name).length > 1 ? "%1 (%2)".arg(sc.name).arg(sc.group) : sc.name;
+            endOptions[area.Id] = [{ label: I18n.trFor("hueDirector", "Turn off"), value: "off" }, { label: I18n.trFor("hueDirector", "Leave as is"), value: "none" }, { label: I18n.trFor("hueDirector", "Warm white"), value: "warm" }].concat(scenes.map(sc => ({ label: label(sc), value: sc.value })).sort(byLabel));
+        }
+        syncEndOptions = endOptions;
+        syncAreas = (hue?.areas ?? []).map(a => ({ Id: a.Id, Name: a.Name }));
     }
 
     // Width of the on/off buttons column (two small icon buttons)
@@ -114,6 +130,64 @@ PluginSettings {
         // Same values as the system event targets ("grouped_light:<id>" or "light:<id>")
         options: [{ label: I18n.trFor("hueDirector", "Nothing"), value: "none" }].concat(root.targetOptions)
         defaultValue: "none"
+    }
+
+    StyledText {
+        topPadding: Theme.spacingL
+        text: I18n.trFor("hueDirector", "Wallpaper sync")
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Font.Medium
+        color: Theme.surfaceText
+    }
+
+    ToggleSetting {
+        settingKey: "syncRestore"
+        label: I18n.trFor("hueDirector", "Restore wallpaper sync at startup")
+        description: I18n.trFor("hueDirector", "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on")
+        defaultValue: false
+    }
+
+    // Only with a different wallpaper per monitor; otherwise every monitor shows the same one
+    SelectionSetting {
+        visible: SessionData.perMonitorWallpaper
+        settingKey: "syncMonitor"
+        label: I18n.trFor("hueDirector", "Wallpaper sync monitor")
+        description: I18n.trFor("hueDirector", "Monitor whose wallpaper the entertainment area follows")
+        options: Quickshell.screens.map(s => ({ label: s.name, value: s.name }))
+        defaultValue: Quickshell.screens[0]?.name ?? ""
+    }
+
+    StyledText {
+        width: parent.width
+        visible: root.syncAreas.length > 0
+        wrapMode: Text.WordWrap
+        text: I18n.trFor("hueDirector", "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:")
+        font.pixelSize: Theme.fontSizeSmall
+        color: Theme.surfaceVariantText
+    }
+
+    // One per entertainment area, saved as syncEnd_<areaId>. DDropdown + loadValue/saveValue like the
+    // event rows below, for the same reason (settings nested in a Repeater can't save)
+    Repeater {
+        model: root.syncAreas
+
+        DDropdown {
+            id: endSetting
+            required property var modelData
+            readonly property string endKey: "syncEnd_" + modelData.Id
+            readonly property var endValues: (root.syncEndOptions[modelData.Id] ?? []).map(o => o.value)
+            readonly property var endLabels: (root.syncEndOptions[modelData.Id] ?? []).map(o => o.label)
+
+            width: parent.width
+            text: modelData.Name
+            options: endLabels
+            currentValue: endLabels[Math.max(0, endValues.indexOf(root.loadValue(endKey, "off")))] ?? ""
+            onValueChanged: newValue => {
+                const i = endLabels.indexOf(newValue);
+                if (i >= 0)
+                    root.saveValue(endKey, endValues[i]);
+            }
+        }
     }
 
     StyledText {

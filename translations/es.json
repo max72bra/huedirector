@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "Segmentos"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "Áreas de entretenimiento"
+    },
+    "In use by another app": {
+        "In use by another app": "En uso por otra app"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "Sincronización del fondo activada · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "Sincronización del fondo desactivada"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "No se puede leer el fondo de pantalla"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "Restaurar la sincronización del fondo al iniciar"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Vuelve a iniciar la sincronización del fondo al arrancar la shell, en el área de entretenimiento donde estaba activa"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "Monitor de la sincronización del fondo"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "Monitor cuyo fondo sigue el área de entretenimiento"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "Sincronización del fondo"
+    },
+    "Leave as is": {
+        "Leave as is": "Dejar así"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "Cuando se detiene la sincronización, las luces vuelven a como estaban. Si no se conoce, cada área de entretenimiento hace esto:"
+    },
+    "Warm white": {
+        "Warm white": "Blanco cálido"
     }
 }

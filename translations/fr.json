@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "Segments"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "Zones de divertissement"
+    },
+    "In use by another app": {
+        "In use by another app": "Utilisée par une autre app"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "Synchro du fond d'écran activée · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "Synchro du fond d'écran désactivée"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "Impossible de lire le fond d'écran"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "Restaurer la synchro du fond d'écran au démarrage"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Relance la synchro du fond d'écran au démarrage du shell, sur la zone de divertissement où elle était active"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "Écran de la synchro du fond d'écran"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "Écran dont la zone de divertissement suit le fond d'écran"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "Synchro du fond d'écran"
+    },
+    "Leave as is": {
+        "Leave as is": "Laisser tel quel"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "Quand la synchro s'arrête, les lampes reviennent à leur état précédent. S'il est inconnu, chaque zone de divertissement fait ceci :"
+    },
+    "Warm white": {
+        "Warm white": "Blanc chaud"
     }
 }

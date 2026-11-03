@@ -13,8 +13,9 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Right-click** turns your favorite light, room, zone or all lights on or off.
 
 ### In the popout
-- **Room cards**: icon from the room type set in the Hue app, how many lights are on, brightness, an on/off switch and a brightness slider. Each card is tinted with the current color of its lights. The header shows how many lights are on, in a chip tinted with their color: click it to turn off every light in the home. Another button opens the plugin settings.
+- **Room cards**: icon from the room type set in the Hue app, how many lights are on, brightness, an on/off switch and a brightness slider. Each card is tinted with the current color of its lights; with a gradient light on, the card shows its colors side by side, in soft pastel tones. The header shows how many lights are on, in a chip tinted with their color: click it to turn off every light in the home. Another button opens the plugin settings.
 - **Zone cards**: zones from the Hue app (groups of lights across rooms) get the same cards, in their own section below the rooms, and the same page.
+- **Entertainment area cards**: a switch that makes the area's lights continue the wallpaper beyond the screen, and one brightness slider for all of them. The card shows each light's color at its place in the area. See [Wallpaper sync](#wallpaper-sync).
 - **Room page** (click a card):
   - **Scenes** as tiles painted with each scene's own colors. The current scene is marked, also when the bridge no longer reports it active (it is recognized from the lights' state).
   - **Dynamic scenes**: scenes with a color palette have a play button that keeps their colors slowly cycling.
@@ -30,7 +31,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 ### Everywhere
 - **Live updates**: changes made from the Hue app or from switches show up within a second, through the bridge event stream; if the stream fails, the plugin polls every 30 seconds.
 - **Fade time** for switching lights and scenes, and **dynamic scene speed**, in the settings.
-- **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | scene`. See [Command line and keybindings](#command-line-and-keybindings).
+- **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | scene | sync | syncOff`. See [Command line and keybindings](#command-line-and-keybindings).
 - **One connection to the bridge** for the whole shell, also with a bar on every monitor.
 - **No external Hue tools**: the plugin talks to the bridge directly (Hue API v2), with in-shell pairing and certificate pinning.
 - **Translations**: English, French, German, Italian, Japanese, Korean, Russian, Simplified Chinese, Spanish.
@@ -42,11 +43,13 @@ The plugin talks only to your Hue Bridge. The only internet request is bridge di
 - The hue slider sets fully saturated colors; use the color picker for pastel tones.
 - Colors shown on screen are an approximation: Hue lamps can produce colors a monitor can't display.
 - Hue Bridge v1 (the round first-generation bridge) is not supported: it has no API v2.
+- Wallpaper sync reads the whole image: with a wallpaper cropped to fill the screen, the edge colors can come from a part you don't see. Video wallpapers can't be read.
 
 ## Requirements
 
 - `curl` and `openssl`
 - A Philips Hue Bridge (second generation or Bridge Pro) on the same local network
+- For the wallpaper sync: an entertainment area set up in the Hue app, and the Hue Director widget on a bar
 - Optional: `avahi` (`avahi-browse`), to find the bridge on the local network without going through `discovery.meethue.com`
 
 Automations also use `systemd-inhibit` and `systemd-run` (part of systemd).
@@ -103,6 +106,22 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 | Power off / Reboot | logind shutdown signal, with the same wait. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
 | Logout | A small user service bound to `graphical-session.target` runs the action when the session ends. It needs a systemd-managed session (e.g. uwsm); otherwise logout rules don't run |
 
+## Wallpaper sync
+
+The lights of a Hue entertainment area continue the wallpaper beyond the screen: a lamp on the left takes the color of the wallpaper's left edge, a lightstrip behind the monitor follows the edges all around it.
+
+1. In the Hue app, create an entertainment area and place its lights around the screen (Settings → Entertainment areas).
+2. In the popout, turn on the area's card under **Entertainment areas**. The slider sets the brightness of all its lights.
+
+How it works:
+- The positions come from the entertainment area: left to right and bottom to top. Each light takes the dominant color of the wallpaper region at its position (vivid colors win over large dull areas). Gradient lightstrips have one position per segment, so they get several colors along the strip.
+- Only the color comes from the wallpaper: every light uses the slider's brightness, so dark wallpaper regions don't dim the lights.
+- When the wallpaper changes, the lights that are on follow it after about a second.
+- Only one area syncs at a time. An area that another app is using (Hue Sync, a TV box) is left alone.
+- The commands go over the normal Hue API: the entertainment area is only used as a map of positions, it is never started and nothing is streamed.
+- When the sync stops, or moves to another area, each light goes back to how it was before: on or off, brightness, and its gradient, color temperature or color. A running effect or dynamic scene is not started again. If the previous state is not known, the area's menu in the settings decides (see [Settings](#settings)).
+- The wallpaper is read by the Hue Director widget on the bar: the image is scaled down by Qt in the widget, so no external tool is needed. Without the widget on any bar the sync can't run: it does not start, and it stops a few seconds after the last widget is removed.
+
 ## Settings
 
 - **Hue Bridge**: shows the paired bridge and lets you pair again.
@@ -111,6 +130,10 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 - **Dynamic scene speed**: how fast colors cycle when you play a dynamic scene. The speed is saved in the scene on the bridge, so the Hue app uses it too.
 - **Show lights on count**: number next to the bar icon. Turn it off to keep only the icon, which still changes with the lights' state. Default: on.
 - **Favorite light**: a light, a room, a zone or all lights. Right-click the bar icon to turn it on or off.
+- **Wallpaper sync**:
+  - **Restore wallpaper sync at startup**: when the shell starts, the sync starts again on the entertainment area where it was on. Default: off.
+  - **Wallpaper sync monitor**: shown only with a different wallpaper per monitor; the monitor whose wallpaper the lights follow.
+  - One menu per entertainment area: what to do when the sync stops and the lights' state before it is not known: turn the area's lights off (default), leave them as they are, warm white (2700 K at the area's sync brightness), or activate one of the scenes that use the area's lights.
 - **System events**: the automations described above.
 
 ## Command line and keybindings
@@ -123,6 +146,8 @@ The plugin answers `dms ipc` calls, so you can bind lights to keys:
 | `dms ipc call hueDirector on <target>` | Turns on `all`, a room, a zone or a light, by name (rooms win over zones with the same name) |
 | `dms ipc call hueDirector off <target>` | Turns it off |
 | `dms ipc call hueDirector scene <name>` | Activates a scene; use `Room/Scene` (or `Zone/Scene`) when several rooms or zones have a scene with that name |
+| `dms ipc call hueDirector sync <area>` | Starts the [wallpaper sync](#wallpaper-sync) on an entertainment area, by name |
+| `dms ipc call hueDirector syncOff` | Stops the wallpaper sync |
 
 Names are case-insensitive; quote names with spaces. Example for Hyprland:
 

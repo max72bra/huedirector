@@ -6,6 +6,7 @@ import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import "."
 import "Accent.js" as Accent
+import "WallpaperSync.js" as WallpaperSync
 
 PluginComponent {
     id: root
@@ -16,6 +17,8 @@ PluginComponent {
     readonly property var zones: hue?.zones ?? []
     // Rooms first, then zones: home cards, room page and favorite room look them up here
     readonly property var groups: rooms.concat(zones)
+    // Entertainment areas: cards for the wallpaper sync, after rooms and zones
+    readonly property var areas: hue?.areas ?? []
     readonly property var lights: hue?.lights ?? []
     readonly property string homeGroupedId: hue?.homeGroupedId ?? ""
     readonly property string error: hue?.error ?? ""
@@ -80,9 +83,123 @@ PluginComponent {
         return [0, 1, 2].map(i => colors.reduce((sum, c) => sum + c[i], 0) / colors.length);
     }
 
+    // Colors along a light that is on, as [{pos 0..1, rgb}], or [] when off. Gradient lights: their points,
+    // evenly spread; mirrored styles start at the center and repeat towards both ends. Others: one color
+    function lightStops(light) {
+        const solid = lightRgb(light);
+        if (!solid)
+            return [];
+        const g = light.HueData.gradient;
+        const pts = (g?.points ?? []).map(p => xyToRgb(p.color.xy.x, p.color.xy.y)).filter(c => c);
+        if (pts.length < 2)
+            return [{ pos: 0, rgb: solid }, { pos: 1, rgb: solid }];
+        const step = 1 / (pts.length - 1);
+        if ((g.mode ?? "").endsWith("_mirrored"))
+            return pts.map((c, i) => ({ pos: 0.5 - i * step / 2, rgb: c })).reverse().concat(pts.slice(1).map((c, i) => ({ pos: 0.5 + (i + 1) * step / 2, rgb: c })));
+        return pts.map((c, i) => ({ pos: i * step, rgb: c }));
+    }
+
+    // Color at t (0..1) between sorted stops
+    function stopsAt(stops, t) {
+        const next = stops.findIndex(s => s.pos >= t);
+        if (next <= 0)
+            return stops[next < 0 ? stops.length - 1 : 0].rgb;
+        const a = stops[next - 1], b = stops[next];
+        const f = b.pos > a.pos ? (t - a.pos) / (b.pos - a.pos) : 0;
+        return [0, 1, 2].map(i => a.rgb[i] + (b.rgb[i] - a.rgb[i]) * f);
+    }
+
+    // Room or zone card background: one equal band per light that is on, gradient lights drawn along
+    // their band. [] (flat average tint) unless a gradient light is on
+    function groupStops(lightList) {
+        const on = lightList.map(lightStops).filter(s => s.length);
+        if (!on.some(s => s.length > 2 || s[0].rgb !== s[1].rgb))
+            return [];
+        return [].concat(...on.map((s, i) => s.map(st => ({ pos: (i + 0.05 + st.pos * 0.9) / on.length, rgb: st.rgb }))));
+    }
+
+    // Entertainment area card background: each channel's color at its x position in the area (left to
+    // right); a gradient strip's segment takes the color at its place along the strip
+    function areaStops(area) {
+        const ch = area?.Channels ?? [];
+        const maxX = Math.max(0, ...ch.map(c => Math.abs(c.X)));
+        const segments = {};
+        ch.forEach(c => c.Members.forEach(m => segments[m.LightId] = (segments[m.LightId] ?? 0) + 1));
+        const byPos = {};
+        for (const c of ch) {
+            for (const m of c.Members) {
+                const s = lightStops(lights.find(l => l.Id === m.LightId));
+                if (!s.length)
+                    continue;
+                const n = segments[m.LightId];
+                const pos = Math.round((maxX ? (c.X / maxX + 1) / 2 : 0.5) * 100) / 100;
+                (byPos[pos] = byPos[pos] ?? []).push(stopsAt(s, n > 1 ? m.Index / (n - 1) : 0.5));
+            }
+        }
+        // Channels on the same vertical (left top and bottom) share one averaged stop
+        return Object.keys(byPos).map(Number).sort((a, b) => a - b).map(p => ({ pos: p, rgb: [0, 1, 2].map(i => byPos[p].reduce((sum, c) => sum + c[i], 0) / byPos[p].length) }));
+    }
+
     function rgbColor(rgb) {
         return rgb ? Qt.rgba(rgb[0], rgb[1], rgb[2], 1) : Theme.primary;
     }
+
+    // Wallpaper sampler for the daemon's sync (HueEvents.syncSamplers): a Canvas paints only inside a
+    // window, which the bar widgets have and the daemon doesn't. Never shown
+    Canvas {
+        id: wallpaperSampler
+
+        property string source: ""
+        // Pending sample(path, cb) callback: cb({w, h, px}) or cb(null) on error or timeout
+        property var callback: null
+
+        width: WallpaperSync.sampleWidth
+        height: WallpaperSync.sampleHeight
+        opacity: 0
+        renderStrategy: Canvas.Immediate
+
+        function sample(path, cb) {
+            if (callback)
+                finish(null);
+            callback = cb;
+            // encodeURI leaves "#" alone, which would start a URL fragment
+            source = "file://" + encodeURI(path).replace(/#/g, "%23");
+            sampleTimeout.restart();
+            if (isImageLoaded(source))
+                requestPaint();
+            else
+                loadImage(source);
+        }
+
+        function finish(img) {
+            sampleTimeout.stop();
+            const cb = callback;
+            callback = null;
+            unloadImage(source);
+            cb?.(img);
+        }
+
+        onImageLoaded: if (callback && isImageLoaded(source)) requestPaint()
+        onPaint: {
+            if (!callback || !isImageLoaded(source))
+                return;
+            const ctx = getContext("2d");
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(source, 0, 0, width, height);
+            finish(WallpaperSync.fromRgba(ctx.getImageData(0, 0, width, height).data, width, height));
+        }
+
+        // Unreadable files (videos, missing) never report imageLoaded
+        Timer {
+            id: sampleTimeout
+            interval: 5000
+            onTriggered: wallpaperSampler.finish(null)
+        }
+    }
+
+    onHueChanged: hue?.addSyncSampler(wallpaperSampler)
+    Component.onCompleted: hue?.addSyncSampler(wallpaperSampler)
+    Component.onDestruction: hue?.removeSyncSampler(wallpaperSampler)
 
     // Right click on the pill toggles the favorite light, room or whole home (settings: favoriteLight)
     pillRightClickAction: () => hue?.toggleFavorite()
@@ -430,11 +547,46 @@ PluginComponent {
                                     brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
                                     dimmable: !!room?.GroupedLight?.HueData?.dimming
                                     accentColor: root.rgbColor(root.averageRgb(roomLights))
+                                    stops: root.groupStops(roomLights)
                                     subtitle: (isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")) + unreachableText
                                     onToggleRequested: on => root.hue.setRoom(room, { on: { on: on } })
                                     onBrightnessRequested: value => root.hue.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
                                     onClicked: root.openRoomId = room.Id
                                 }
+                            }
+                        }
+
+                        StyledText {
+                            visible: root.areas.length > 0
+                            topPadding: Theme.spacingS
+                            text: I18n.trFor("hueDirector", "Entertainment areas")
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
+
+                        // Entertainment area: the toggle starts the wallpaper sync (one area at a time),
+                        // the slider sets the brightness of all its lights. No page
+                        Repeater {
+                            model: root.areas.length
+
+                            RoomCard {
+                                required property int index
+                                readonly property var area: root.areas[index]
+                                readonly property bool syncing: root.hue?.syncAreaId === area?.Id
+
+                                width: parent.width
+                                clickable: false
+                                name: area?.Name ?? ""
+                                icon: "tv"
+                                isOn: syncing
+                                sliderEnabled: syncing
+                                brightness: syncing ? (root.hue?.syncBrightness ?? 0) : 0
+                                accentColor: root.rgbColor(root.averageRgb(root.lights.filter(l => (area?.LightIds ?? []).includes(l.Id))))
+                                stops: root.areaStops(area)
+                                subtitle: area?.Active ? I18n.trFor("hueDirector", "In use by another app") : syncing && root.hue.syncError ? root.hue.syncError : syncing ? I18n.trFor("hueDirector", "Wallpaper sync on · %1%").arg(brightness) : I18n.trFor("hueDirector", "Wallpaper sync off")
+                                onToggleRequested: on => root.hue.setSync(on ? area.Id : "")
+                                onBrightnessRequested: value => root.hue.setSyncBrightness(value)
                             }
                         }
                     }

@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "Сегменты"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "Развлекательные зоны"
+    },
+    "In use by another app": {
+        "In use by another app": "Используется другим приложением"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "Синхронизация с обоями вкл. · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "Синхронизация с обоями выкл."
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "Не удалось прочитать обои"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "Восстанавливать синхронизацию с обоями при запуске"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Снова запускать синхронизацию с обоями при старте оболочки в той развлекательной зоне, где она была включена"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "Монитор для синхронизации с обоями"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "Монитор, обоям которого следует развлекательная зона"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "Синхронизация с обоями"
+    },
+    "Leave as is": {
+        "Leave as is": "Оставить как есть"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "Когда синхронизация останавливается, лампы возвращаются в прежнее состояние. Если оно неизвестно, каждая развлекательная зона делает следующее:"
+    },
+    "Warm white": {
+        "Warm white": "Тёплый белый"
     }
 }

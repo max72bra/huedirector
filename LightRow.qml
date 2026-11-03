@@ -62,6 +62,9 @@ DCard {
     readonly property bool hasColorControls: hasColor || !!colorTemp || effectValues.length > 0
     readonly property color accentColor: currentRgb ? Qt.rgba(currentRgb[0], currentRgb[1], currentRgb[2], 1) : Theme.primary
     readonly property color visibleAccent: Accent.visible(accentColor, Theme.surfaceContainer)
+    // Icon bubble: the light's color at 0.3 over the row; the icon is checked against it, not the theme surface
+    readonly property color bubbleColor: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3)
+    readonly property color iconColor: Accent.visible(accentColor, Qt.tint(color, bubbleColor))
 
     signal toggleRequested(bool on)
     signal brightnessRequested(int value)
@@ -94,13 +97,13 @@ DCard {
                 height: width
                 radius: width / 2
                 anchors.verticalCenter: parent.verticalCenter
-                color: row.isOn ? Qt.rgba(row.accentColor.r, row.accentColor.g, row.accentColor.b, 0.3) : Theme.surfaceContainerHigh
+                color: row.isOn ? row.bubbleColor : Theme.surfaceContainerHigh
 
                 DIcon {
                     anchors.centerIn: parent
                     name: row.reachable ? row.icon : "link_off"
                     size: Theme.iconSizeMedium
-                    color: row.isOn ? row.visibleAccent : Theme.surfaceVariantText
+                    color: row.isOn ? row.iconColor : Theme.surfaceVariantText
                 }
             }
 

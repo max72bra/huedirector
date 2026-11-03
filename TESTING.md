@@ -1,6 +1,6 @@
 # Release test checklist
 
-Manual checks before a release. Watch the shell log for `hueDirector` errors: `/run/user/$UID/quickshell/by-id/*/log.log`.
+Manual checks before a release. Watch the shell log for `hueDirector` errors: `/run/user/$UID/quickshell/by-id/*/log.log`. After adding or changing a `.js` file or a component used by the widget (e.g. `RoomCard.qml`), run `dms restart`: `plugins reload` keeps Qt's cached copy.
 
 ## Setup
 - [ ] Fresh install: the plugin loads disabled; enabling it shows the broken-link icon and the pairing panel in the popout.
@@ -16,6 +16,19 @@ Manual checks before a release. Watch the shell log for `hueDirector` errors: `/
 - [ ] Changes made from the Hue app show up within a second.
 - [ ] Bridge powered off at shell start, then powered on: red icon, then normal state without restarting the shell.
 - [ ] Locale switch (Settings → Locale) retranslates the plugin.
+- [ ] Gradient light on: its room/zone card shows its colors along the card (mirrored style: first point in the middle), in pastel tones; no gradient light on: flat tint as before.
+
+## Wallpaper sync (an entertainment area with a gradient strip and a plain lamp)
+- [ ] Area card toggle: lights take the wallpaper edge colors at their positions, all at the slider brightness; the card shows them left to right.
+- [ ] Change the wallpaper (image and solid color): lights that are on follow within ~1 s; lights that are off stay off.
+- [ ] Brightness slider while syncing changes all the area's lights.
+- [ ] Toggle off: every light goes back to its previous state (gradient points and style, color temperature, color, brightness, on/off). Switching to another area restores the first one.
+- [ ] `syncSnapshot` missing from `~/.local/state/dms/plugins/hueDirector_state.json`: stopping applies the area's menu (off, leave, warm white, scene); the menu lists only scenes using the area's lights.
+- [ ] Restore at startup on: `dms restart` resumes the sync without overwriting the saved previous state. Off: lights untouched at startup.
+- [ ] Area started by the Hue Sync app: the card says it is in use and its lights are not touched.
+- [ ] Remove the widget from every bar while syncing: after ~3 s the sync stops and restores the lights; `dms ipc call hueDirector sync <area>` answers that the widget is needed.
+- [ ] Unreadable wallpaper (video): the card says it can't read the wallpaper after ~5 s.
+- [ ] `dms ipc call hueDirector sync <area>` / `syncOff`.
 
 ## Automations (one rule per event, e.g. a test lamp)
 - [ ] Login (log out and back in), Logout.

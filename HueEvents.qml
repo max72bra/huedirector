@@ -1,9 +1,11 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Modules.Plugins
 import "."
+import "WallpaperSync.js" as WallpaperSync
 
 // Daemon (one instance, unlike the bar widgets, one per bar). It owns the bridge state, the event stream,
 // the polling and every command, shared with the widgets and the settings through
@@ -18,6 +20,8 @@ PluginComponent {
     readonly property var pairing: pairingItem
     property var rooms: []
     property var zones: []
+    // Entertainment areas, used only for wallpaper sync
+    property var areas: []
     property var lights: []
     // grouped_light of the whole home, for "all off"
     property string homeGroupedId: ""
@@ -60,6 +64,7 @@ PluginComponent {
             paired = false;
             rooms = [];
             zones = [];
+            areas = [];
             lights = [];
             homeGroupedId = "";
             loaded = false;
@@ -73,6 +78,7 @@ PluginComponent {
             result.rooms.concat(result.zones).forEach(r => r.Scenes.sort(byName));
             rooms = result.rooms.sort(byName);
             zones = result.zones.sort(byName);
+            areas = result.areas.sort(byName);
             lights = result.lights.sort(byName);
             homeGroupedId = result.homeGroupedId;
             error = "";
@@ -81,6 +87,7 @@ PluginComponent {
             paired = true;
             certChanged = false;
             startEvents();
+            syncAfterRefresh();
         });
     }
 
@@ -118,6 +125,196 @@ PluginComponent {
             gradient.mode = mode;
         setResource("light", lightId, { on: { on: true }, gradient: gradient });
     }
+
+    // --- Wallpaper sync: the lights of one entertainment area take the wallpaper color at their position
+    // (WallpaperSync.js), over plain REST: the area is never started. Only the hue comes from the image,
+    // brightness is syncBrightness for every light. Saved in the plugin state: syncArea, syncBrightness;
+    // Settings → syncRestore starts it again with the shell, syncMonitor picks the wallpaper
+    property string syncAreaId: ""
+    // Read once in Component.onCompleted: as a binding, saving it would re-evaluate it (binding loop)
+    property int syncBrightness: 70
+    // "" or why the wallpaper could not be read (video wallpaper, missing file, ...)
+    property string syncError: ""
+    property bool syncRestoreChecked: false
+    // Bar widgets (HueDirector.qml) lend their Canvas to read the wallpaper: the daemon has no window
+    // to paint one in. No widget on any bar, no sync
+    property var syncSamplers: []
+    readonly property bool syncAvailable: syncSamplers.length > 0
+
+    function addSyncSampler(sampler) {
+        if (!syncSamplers.includes(sampler))
+            syncSamplers = syncSamplers.concat([sampler]);
+        if (loaded)
+            syncAfterRefresh();
+    }
+
+    function removeSyncSampler(sampler) {
+        syncSamplers = syncSamplers.filter(s => s !== sampler);
+    }
+
+    // Bars are rebuilt on monitor and settings changes: the sync stops only if no widget comes back
+    onSyncAvailableChanged: if (syncAvailable) syncUnavailableTimer.stop(); else if (syncAreaId) syncUnavailableTimer.restart()
+
+    Timer {
+        id: syncUnavailableTimer
+        interval: 3000
+        onTriggered: if (!root.syncAvailable) root.setSync("")
+    }
+    readonly property var syncArea: areas.find(a => a.Id === syncAreaId) ?? null
+
+    // areaId "" stops the sync. Stopping, or moving to another area, puts the lights back as they were
+    // before the sync (syncSnapshot); when that is unknown, Settings → syncEnd_<areaId> says what to do
+    function setSync(areaId) {
+        if (areaId && !syncAvailable)
+            return;
+        const previous = syncArea;
+        if (syncAreaId && syncAreaId !== areaId)
+            syncEnd(previous);
+        syncAreaId = areaId;
+        syncError = "";
+        PluginService.savePluginState("hueDirector", "syncArea", areaId);
+        if (!areaId)
+            return;
+        // Kept across restarts: a sync restored at startup must not save its own colors as the previous state
+        if (!PluginService.loadPluginState("hueDirector", "syncSnapshot", null))
+            PluginService.savePluginState("hueDirector", "syncSnapshot", syncSnapshot(syncArea));
+        syncNow(true);
+    }
+
+    // {lightId: PUT body} rebuilding each reachable light of the area: on, brightness, then gradient,
+    // color temperature or color, whichever the light is using (a plain color clears the gradient points)
+    function syncSnapshot(area) {
+        const snap = {};
+        for (const l of lights.filter(l => l.Reachable && (area?.LightIds ?? []).includes(l.Id))) {
+            const hd = l.HueData;
+            const body = { on: { on: !!hd.on?.on } };
+            if (hd.dimming)
+                body.dimming = { brightness: hd.dimming.brightness };
+            if ((hd.gradient?.points ?? []).length >= 2)
+                body.gradient = { points: hd.gradient.points.map(p => ({ color: { xy: p.color.xy } })), mode: hd.gradient.mode };
+            else if (hd.color_temperature?.mirek_valid && hd.color_temperature.mirek)
+                body.color_temperature = { mirek: hd.color_temperature.mirek };
+            else if (hd.color?.xy)
+                body.color = { xy: hd.color.xy };
+            snap[l.Id] = body;
+        }
+        return snap;
+    }
+
+    // Saved snapshot back on the lights, or Settings → syncEnd_<areaId>: "off" (default), "none",
+    // "warm" (2700 K at the sync brightness) or "scene:<id>"
+    function syncEnd(area) {
+        const snap = PluginService.loadPluginState("hueDirector", "syncSnapshot", null);
+        PluginService.savePluginState("hueDirector", "syncSnapshot", null);
+        if (snap) {
+            for (const id in snap)
+                setResource("light", id, snap[id]);
+            return;
+        }
+        const end = pluginData?.["syncEnd_" + area?.Id] ?? "off";
+        if (end === "off") {
+            for (const id of area?.LightIds ?? [])
+                setResource("light", id, { on: { on: false } });
+        } else if (end === "warm") {
+            for (const id of area?.LightIds ?? [])
+                setResource("light", id, { on: { on: true }, dimming: { brightness: syncBrightness }, color_temperature: { mirek: 370 } });
+        } else if (end.startsWith("scene:")) {
+            setResource("scene", end.slice(6), { recall: { action: "active" } });
+        }
+    }
+
+    function setSyncBrightness(value) {
+        syncBrightness = value;
+        PluginService.savePluginState("hueDirector", "syncBrightness", value);
+        for (const id of syncArea?.LightIds ?? [])
+            setResource("light", id, { on: { on: true }, dimming: { brightness: value } });
+    }
+
+    // First fetch with a bar widget around: restore the saved sync (Settings → syncRestore).
+    // Later fetches: stop if the area is gone
+    function syncAfterRefresh() {
+        if (!syncRestoreChecked) {
+            if (!syncAvailable)
+                return;
+            syncRestoreChecked = true;
+            const saved = PluginService.loadPluginState("hueDirector", "syncArea", "");
+            if (pluginData?.syncRestore && areas.some(a => a.Id === saved)) {
+                setSync(saved);
+            } else {
+                // Not restored: lights are left alone at startup (a login rule may have just set them)
+                PluginService.savePluginState("hueDirector", "syncArea", "");
+                PluginService.savePluginState("hueDirector", "syncSnapshot", null);
+            }
+        } else if (syncAreaId && !syncArea) {
+            setSync("");
+        }
+    }
+
+    function syncWallpaper() {
+        const screen = pluginData?.syncMonitor || (Quickshell.screens[0]?.name ?? "");
+        return SessionData.getMonitorWallpaper(screen) ?? "";
+    }
+
+    // turnOn: starting the sync switches the area on; a wallpaper change only recolors the lights that are on
+    function syncNow(turnOn) {
+        const area = syncArea;
+        if (!area || area.Active || !syncAvailable)
+            return;
+        const path = syncWallpaperPath;
+        if (!path)
+            return;
+        // Solid color wallpaper: the same color everywhere
+        if (path.startsWith("#")) {
+            const c = Qt.color(path);
+            const img = { w: 1, h: 1, px: [c.r, c.g, c.b] };
+            syncApply(area, WallpaperSync.lightColors(area, img), turnOn);
+            return;
+        }
+        // shortcut: the whole image is sampled, the wallpaper fill mode (crop) is ignored; crop it if lights look off
+        syncSamplers[0].sample(path, img => {
+            if (!img) {
+                syncError = I18n.trFor("hueDirector", "Can't read the wallpaper");
+                console.warn("Hue Director: wallpaper sync:", syncError, path);
+                return;
+            }
+            syncError = "";
+            if (syncArea === area)
+                syncApply(area, WallpaperSync.lightColors(area, img), turnOn);
+        });
+    }
+
+    // colorsByLight: {lightId: [[r, g, b], ...]} in strip order. Gradient lights get up to
+    // points_capable colors, the others the middle one. Black has no xy: it becomes the darkest gray
+    function syncApply(area, colorsByLight, turnOn) {
+        const toXy = rgb => hueBridge.rgbToXy({ r: rgb[0], g: rgb[1], b: rgb[2] }) ?? hueBridge.rgbToXy({ r: 0.01, g: 0.01, b: 0.01 });
+        for (const id in colorsByLight) {
+            const light = lights.find(l => l.Id === id);
+            const hd = light?.HueData;
+            if (!hd || !light.Reachable || (!turnOn && !hd.on?.on))
+                continue;
+            const colors = colorsByLight[id];
+            const cap = hd.gradient?.points_capable ?? 0;
+            const body = { dimming: { brightness: syncBrightness } };
+            if (turnOn)
+                body.on = { on: true };
+            if (cap >= 2 && colors.length >= 2)
+                body.gradient = { points: WallpaperSync.spread(colors, cap).map(c => ({ color: { xy: toXy(c) } })) };
+            else if (hd.color)
+                body.color = { xy: toXy(colors[Math.floor(colors.length / 2)]) };
+            setResource("light", id, body);
+        }
+    }
+
+    // Wallpaper changes come in bursts (light/dark switch, per-monitor updates): one sample after they settle
+    Timer {
+        id: syncTimer
+        interval: 1000
+        onTriggered: root.syncNow(false)
+    }
+
+    // Follows SessionData and Settings → syncMonitor (the binding tracks what syncWallpaper() reads)
+    readonly property string syncWallpaperPath: syncWallpaper()
+    onSyncWallpaperPathChanged: if (syncAreaId) syncTimer.restart()
 
     // Favorite light, room, zone or whole home (Settings → Favorite light): bar right click and IPC toggle
     function toggleFavorite() {
@@ -210,7 +407,7 @@ PluginComponent {
     }
 
     // Resource types shown by the UI; other events (sensors, ...) don't refresh
-    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zone", "zigbee_connectivity"]
+    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zone", "zigbee_connectivity", "entertainment_configuration"]
 
     Process {
         id: eventsProcess
@@ -378,6 +575,25 @@ PluginComponent {
             return root.ipcReady() || root.setTarget(target, false);
         }
 
+        // Wallpaper sync on an entertainment area (name, case-insensitive), or off
+        function sync(area: string): string {
+            const notReady = root.ipcReady();
+            if (notReady)
+                return notReady;
+            const a = root.areas.find(r => r.Name.toLowerCase() === area.trim().toLowerCase());
+            if (!a)
+                return "no entertainment area named " + area;
+            if (!root.syncAvailable)
+                return "wallpaper sync needs the Hue Director widget on a bar";
+            root.setSync(a.Id);
+            return a.Active ? "in use by another app" : "ok";
+        }
+
+        function syncOff(): string {
+            root.setSync("");
+            return "ok";
+        }
+
         // "Scene" or "Room/Scene" (also "Zone/Scene") when the name exists in several groups (case-insensitive)
         function scene(name: string): string {
             const notReady = root.ipcReady();
@@ -401,6 +617,7 @@ PluginComponent {
     }
 
     Component.onCompleted: {
+        syncBrightness = PluginService.loadPluginState("hueDirector", "syncBrightness", 70);
         subscribeShutdown();
         checkLogin();
     }

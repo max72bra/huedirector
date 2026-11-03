@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "セグメント"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "エンターテイメントエリア"
+    },
+    "In use by another app": {
+        "In use by another app": "別のアプリが使用中"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "壁紙同期オン · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "壁紙同期オフ"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "壁紙を読み込めません"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "起動時に壁紙同期を復元"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "シェル起動時に、有効だったエンターテイメントエリアで壁紙同期を再開します"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "壁紙同期のモニター"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "エンターテイメントエリアが壁紙を追従するモニター"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "壁紙同期"
+    },
+    "Leave as is": {
+        "Leave as is": "そのまま"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "同期が停止すると、ライトは元の状態に戻ります。不明な場合、各エンターテイメントエリアは次の動作をします:"
+    },
+    "Warm white": {
+        "Warm white": "暖かい白"
     }
 }

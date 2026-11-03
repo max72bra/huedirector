@@ -103,7 +103,7 @@ Item {
         }, 0);
     }
 
-    // cb(result, error): result is {rooms, zones, lights, homeGroupedId} in the shape the UI uses,
+    // cb(result, error): result is {rooms, zones, areas, lights, homeGroupedId} in the shape the UI uses,
     // error "" or "unpaired" or "certchanged" or "unreachable" or a message
     function fetchAll(cb) {
         fetchWaiters.push(cb);
@@ -190,6 +190,7 @@ Item {
     // Joins flat v2 resources into the shape the UI was built on:
     // room and zone {Id, Name, Archetype, GroupedLight.HueData, LightIds[], Scenes[] {Id, Name, HueData},
     //       SmartScenes[] {Id, Name, HueData, Current = scene of the active time slot or null}},
+    // area {Id, Name, Active, Channels[] {X, Z, Members[] {LightId, Index}}, LightIds[]},
     // light {Id, Name, Archetype, HueData, Reachable}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
         const isGroup = rtype => rtype === "room" || rtype === "zone";
@@ -199,7 +200,11 @@ Item {
         const deviceLights = {};
         // zigbee_connectivity status per device: "connected", "disconnected", "connectivity_issue", ...
         const deviceZigbee = {};
+        // entertainment service -> its light (renderer_reference), for entertainment area channels
+        const entertainmentLight = {};
         for (const r of data) {
+            if (r.type === "entertainment" && r.renderer_reference?.rtype === "light")
+                entertainmentLight[r.id] = r.renderer_reference.rid;
             if (r.type === "light" && r.owner?.rtype === "device")
                 (deviceLights[r.owner.rid] = deviceLights[r.owner.rid] ?? []).push(r.id);
             if (r.type === "grouped_light" && isGroup(r.owner?.rtype))
@@ -245,7 +250,21 @@ Item {
             // Lights without a zigbee_connectivity service (e.g. Matter/Wi-Fi) count as reachable
             Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected"
         }));
-        return { rooms: rooms, zones: zones, lights: lights, homeGroupedId: homeGroupedId };
+        // Entertainment areas: only their light positions are used (wallpaper sync), never streamed.
+        // x goes left to right, z bottom to top, both -1..1; a gradient strip has one channel per segment
+        const areas = data.filter(r => r.type === "entertainment_configuration").map(r => ({
+            Id: r.id,
+            Name: r.metadata?.name ?? r.name ?? "",
+            // Another app (Hue Sync, a TV box) is streaming to it
+            Active: r.status === "active",
+            Channels: (r.channels ?? []).map(c => ({
+                X: c.position?.x ?? 0,
+                Z: c.position?.z ?? 0,
+                Members: (c.members ?? []).filter(m => entertainmentLight[m.service?.rid]).map(m => ({ LightId: entertainmentLight[m.service.rid], Index: m.index ?? 0 }))
+            })),
+            LightIds: (r.light_services ?? []).map(l => l.rid)
+        }));
+        return { rooms: rooms, zones: zones, areas: areas, lights: lights, homeGroupedId: homeGroupedId };
     }
 
     // Saved targets ("grouped_light:<id>" or "light:<id>", settings and IPC) -> {kind, id}, or null.

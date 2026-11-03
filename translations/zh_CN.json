@@ -328,5 +328,44 @@
     },
     "Segments": {
         "Segments": "分段"
+    },
+    "Entertainment areas": {
+        "Entertainment areas": "娱乐区域"
+    },
+    "In use by another app": {
+        "In use by another app": "正被其他应用使用"
+    },
+    "Wallpaper sync on · %1%": {
+        "Wallpaper sync on · %1%": "壁纸同步已开启 · %1%"
+    },
+    "Wallpaper sync off": {
+        "Wallpaper sync off": "壁纸同步已关闭"
+    },
+    "Can't read the wallpaper": {
+        "Can't read the wallpaper": "无法读取壁纸"
+    },
+    "Restore wallpaper sync at startup": {
+        "Restore wallpaper sync at startup": "启动时恢复壁纸同步"
+    },
+    "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": {
+        "Start the wallpaper sync again when the shell starts, on the entertainment area where it was on": "Shell 启动时，在之前开启的娱乐区域上重新开始壁纸同步"
+    },
+    "Wallpaper sync monitor": {
+        "Wallpaper sync monitor": "壁纸同步显示器"
+    },
+    "Monitor whose wallpaper the entertainment area follows": {
+        "Monitor whose wallpaper the entertainment area follows": "娱乐区域跟随其壁纸的显示器"
+    },
+    "Wallpaper sync": {
+        "Wallpaper sync": "壁纸同步"
+    },
+    "Leave as is": {
+        "Leave as is": "保持原样"
+    },
+    "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": {
+        "When the sync stops, the lights go back to how they were. If that is not known, each entertainment area does this instead:": "同步停止时，灯光会恢复到之前的状态。若未知，每个娱乐区域将执行以下操作："
+    },
+    "Warm white": {
+        "Warm white": "暖白光"
     }
 }
