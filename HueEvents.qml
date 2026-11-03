@@ -75,7 +75,10 @@ PluginComponent {
                 return;
             // Bridge order is not stable (scenes move after activation): sort everything by name
             const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
-            result.rooms.concat(result.zones).forEach(r => r.Scenes.sort(byName));
+            result.rooms.concat(result.zones).forEach(r => {
+                r.Scenes.sort(byName);
+                r.SmartScenes.sort(byName);
+            });
             rooms = result.rooms.sort(byName);
             zones = result.zones.sort(byName);
             areas = result.areas.sort(byName);
@@ -108,15 +111,13 @@ PluginComponent {
     }
 
     function setColor(lightId, c) {
-        const xy = hueBridge.rgbToXy(c);
-        if (xy)
-            setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
+        setResource("light", lightId, { on: { on: true }, color: { xy: hueBridge.rgbToXy(c) } });
     }
 
     // Gradient lights: points (2..points_capable) spread along the light; mode optional (keeps the current one).
-    // A point is the bridge's xy {x, y}, sent as is, or a color. Black has no xy: it becomes the darkest gray
+    // A point is the bridge's xy {x, y}, sent as is, or a color
     function setGradient(lightId, colors, mode) {
-        const toXy = c => c.x !== undefined ? { x: c.x, y: c.y } : hueBridge.rgbToXy(c) ?? hueBridge.rgbToXy(Qt.rgba(0.01, 0.01, 0.01, 1));
+        const toXy = c => c.x !== undefined ? { x: c.x, y: c.y } : hueBridge.rgbToXy(c);
         const points = colors.map(c => ({ color: { xy: toXy(c) } }));
         if (points.length < 2)
             return;
@@ -168,16 +169,25 @@ PluginComponent {
         if (areaId && !syncAvailable)
             return;
         const previous = syncArea;
-        if (syncAreaId && syncAreaId !== areaId)
+        // Lights shared with the area being left still show its wallpaper colors: their saved state comes from here
+        let kept = null;
+        if (syncAreaId && syncAreaId !== areaId) {
+            kept = PluginService.loadPluginState("hueDirector", "syncSnapshot", null);
             syncEnd(previous);
+        }
         syncAreaId = areaId;
         syncError = "";
         PluginService.savePluginState("hueDirector", "syncArea", areaId);
         if (!areaId)
             return;
         // Kept across restarts: a sync restored at startup must not save its own colors as the previous state
-        if (!PluginService.loadPluginState("hueDirector", "syncSnapshot", null))
-            PluginService.savePluginState("hueDirector", "syncSnapshot", syncSnapshot(syncArea));
+        if (!PluginService.loadPluginState("hueDirector", "syncSnapshot", null)) {
+            const snap = syncSnapshot(syncArea);
+            for (const id in kept ?? {})
+                if (id in snap)
+                    snap[id] = kept[id];
+            PluginService.savePluginState("hueDirector", "syncSnapshot", snap);
+        }
         syncNow(true);
     }
 
@@ -278,15 +288,16 @@ PluginComponent {
                 return;
             }
             syncError = "";
-            if (syncArea === area)
+            // By id: every refresh rebuilds the area objects
+            if (syncAreaId === area.Id)
                 syncApply(area, WallpaperSync.lightColors(area, img), turnOn);
         });
     }
 
     // colorsByLight: {lightId: [[r, g, b], ...]} in strip order. Gradient lights get up to
-    // points_capable colors, the others the middle one. Black has no xy: it becomes the darkest gray
+    // points_capable colors, the others the middle one
     function syncApply(area, colorsByLight, turnOn) {
-        const toXy = rgb => hueBridge.rgbToXy({ r: rgb[0], g: rgb[1], b: rgb[2] }) ?? hueBridge.rgbToXy({ r: 0.01, g: 0.01, b: 0.01 });
+        const toXy = rgb => hueBridge.rgbToXy({ r: rgb[0], g: rgb[1], b: rgb[2] });
         for (const id in colorsByLight) {
             const light = lights.find(l => l.Id === id);
             const hd = light?.HueData;
@@ -787,18 +798,20 @@ PluginComponent {
         readonly property string what: [root.rule("sleep") ? "sleep" : "", root.rule("shutdown") || root.rule("reboot") ? "shutdown" : ""].filter(w => w).join(":")
         readonly property bool wanted: what !== "" && hueBridge.configured && !released
 
-        running: wanted
+        // Paused while inhibitorRestart runs, then started again by this binding
+        running: wanted && !inhibitorRestart.running
         command: ["systemd-inhibit", "--what=" + what, "--mode=delay", "--who=Hue Director", "--why=Set the lights before sleep or power off", "sleep", "infinity"]
         // Logout scripts that kill the user's processes before calling systemctl poweroff/reboot take
         // "sleep" down too, which drops the lock. Started again at once: a new process usually escapes
         // such scripts, which collect the processes to kill up front
         onExited: if (wanted) inhibitorRestart.restart()
+        // A running process keeps its old --what: restart it with the new rules
+        onCommandChanged: if (running) inhibitorRestart.restart()
     }
 
     Timer {
         id: inhibitorRestart
         interval: 1000
-        onTriggered: if (inhibitor.wanted && !inhibitor.running) inhibitor.running = true
     }
 
     // --- Logout: the shell dies with the session, so a transient user unit bound to graphical-session.target

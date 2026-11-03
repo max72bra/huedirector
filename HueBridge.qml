@@ -292,7 +292,8 @@ Item {
     }
 
     // sRGB 0..1 -> CIE xy (Wide RGB D65 matrix from the Hue developer docs).
-    // shortcut: no gamut clamping, the bridge maps out-of-gamut xy to the nearest color it can show
+    // shortcut: no gamut clamping, the bridge maps out-of-gamut xy to the nearest color it can show.
+    // Black has no xy: it becomes the darkest gray
     function rgbToXy(c) {
         const lin = [c.r, c.g, c.b].map(v => v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92);
         const X = lin[0] * 0.664511 + lin[1] * 0.154324 + lin[2] * 0.162028;
@@ -300,7 +301,7 @@ Item {
         const Z = lin[0] * 0.000088 + lin[1] * 0.072310 + lin[2] * 0.986039;
         const sum = X + Y + Z;
         if (sum <= 0)
-            return null;
+            return rgbToXy({ r: 0.01, g: 0.01, b: 0.01 });
         return { x: Math.round(X / sum * 10000) / 10000, y: Math.round(Y / sum * 10000) / 10000 };
     }
 

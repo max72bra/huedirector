@@ -159,8 +159,11 @@ PluginComponent {
         renderStrategy: Canvas.Immediate
 
         function sample(path, cb) {
-            if (callback)
-                finish(null);
+            // A newer request replaces a pending one, dropped unanswered: not an unreadable wallpaper
+            if (callback) {
+                sampleTimeout.stop();
+                unloadImage(source);
+            }
             callback = cb;
             // encodeURI leaves "#" alone, which would start a URL fragment
             source = "file://" + encodeURI(path).replace(/#/g, "%23");

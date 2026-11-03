@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.1
+
+- Adding a reboot or power off rule while a suspend rule exists (or the other way round) now takes effect at once, without restarting the shell.
+- Wallpaper sync: moving between two entertainment areas that share a light restores that light to how it was before the first sync, not to the wallpaper colors; a wallpaper change is no longer skipped when a bridge update arrives while it is read; no false "Can't read the wallpaper" when a new read replaces a pending one.
+- Picking black in the color picker sets the darkest color instead of doing nothing.
+- Smart scenes are sorted by name, so their tiles no longer move around.
+- Automated checks for the wallpaper sampling (`node tests/wallpaper-sync.test.js`).
+
 ## 1.5.0
 
 - Wallpaper sync: "Entertainment areas" cards in the popout. The switch makes the area's lights continue the wallpaper beyond the screen, each light with the dominant color of the wallpaper where it stands (gradient strips get one color per segment); the slider sets one brightness for all of them. Stopping the sync puts the lights back as they were (if that is unknown, a per-area setting turns them off, leaves them, sets warm white or activates one of the scenes using them). Follows wallpaper changes, skips areas used by another app, can restart with the shell (Settings), and has `sync` / `syncOff` IPC calls. The wallpaper is read by the bar widget with no external tools, so the sync needs the widget on a bar.
