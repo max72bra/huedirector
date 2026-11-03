@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "Lieblingsraum"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "In der Leiste angezeigter Raum (Symbol und Anzahl eingeschalteter Lampen)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "Raum oder Zone, in der Leiste angezeigt (Symbol und Anzahl eingeschalteter Lampen)"
     },
     "System events": {
         "System events": "Systemereignisse"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Schalte eine Lampe, einen Raum oder alle Lampen ein oder aus, wenn in deiner Sitzung etwas passiert. Abmelderegeln benötigen eine von systemd verwaltete Sitzung (z. B. uwsm). Vor Bereitschaft und Ausschalten wartet das System einige Sekunden, bis die Lampen gesetzt sind."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Schalte eine Lampe, einen Raum, eine Zone oder alle Lampen ein oder aus, wenn in deiner Sitzung etwas passiert. Abmelderegeln benötigen eine von systemd verwaltete Sitzung (z. B. uwsm). Vor Bereitschaft und Ausschalten wartet das System einige Sekunden, bis die Lampen gesetzt sind."
     },
     "Nothing": {
         "Nothing": "Nichts"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "Effekt"
+    },
+    "Zones": {
+        "Zones": "Zonen"
+    },
+    "Zone · %1": {
+        "Zone · %1": "Zone · %1"
+    },
+    "Rooms": {
+        "Rooms": "Räume"
+    },
+    "All off": {
+        "All off": "Alle aus"
     }
 }

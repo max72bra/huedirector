@@ -103,7 +103,7 @@ Item {
         }, 0);
     }
 
-    // cb(result, error): result is {rooms, lights} in the shape the UI uses,
+    // cb(result, error): result is {rooms, zones, lights, homeGroupedId} in the shape the UI uses,
     // error "" or "unpaired" or "certchanged" or "unreachable" or a message
     function fetchAll(cb) {
         fetchWaiters.push(cb);
@@ -187,62 +187,64 @@ Item {
     }
 
     // Joins flat v2 resources into the shape the UI was built on:
-    // room {Id, Name, Archetype, GroupedLight.HueData, Scenes[] {Id, Name, HueData},
+    // room and zone {Id, Name, Archetype, GroupedLight.HueData, LightIds[], Scenes[] {Id, Name, HueData},
     //       SmartScenes[] {Id, Name, HueData, Current = scene of the active time slot or null}},
-    // light {Id, Name, Archetype, HueData, Reachable, Parent.Parent.Id = room}, homeGroupedId (all lights of the bridge)
+    // light {Id, Name, Archetype, HueData, Reachable}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
-        const deviceRoom = {};
-        const groupedByRoom = {};
+        const isGroup = rtype => rtype === "room" || rtype === "zone";
+        const groupedByOwner = {};
         let homeGroupedId = "";
-        const scenesByRoom = {};
+        const scenesByGroup = {};
+        const deviceLights = {};
         // zigbee_connectivity status per device: "connected", "disconnected", "connectivity_issue", ...
         const deviceZigbee = {};
         for (const r of data) {
-            if (r.type === "room")
-                for (const c of r.children ?? [])
-                    if (c.rtype === "device")
-                        deviceRoom[c.rid] = r.id;
-            if (r.type === "grouped_light" && r.owner?.rtype === "room")
-                groupedByRoom[r.owner.rid] = r;
+            if (r.type === "light" && r.owner?.rtype === "device")
+                (deviceLights[r.owner.rid] = deviceLights[r.owner.rid] ?? []).push(r.id);
+            if (r.type === "grouped_light" && isGroup(r.owner?.rtype))
+                groupedByOwner[r.owner.rid] = r;
             if (r.type === "zigbee_connectivity" && r.owner?.rtype === "device")
                 deviceZigbee[r.owner.rid] = r.status;
             if (r.type === "grouped_light" && r.owner?.rtype === "bridge_home")
                 homeGroupedId = r.id;
-            if (r.type === "scene" && r.group?.rtype === "room")
-                (scenesByRoom[r.group.rid] = scenesByRoom[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r });
+            if (r.type === "scene" && isGroup(r.group?.rtype))
+                (scenesByGroup[r.group.rid] = scenesByGroup[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r });
         }
         // Smart scenes switch between scenes by time of day; Current gives the tile its colors
         const sceneById = {};
-        for (const list of Object.values(scenesByRoom))
+        for (const list of Object.values(scenesByGroup))
             for (const sc of list)
                 sceneById[sc.Id] = sc;
-        const smartByRoom = {};
+        const smartByGroup = {};
         for (const r of data) {
-            if (r.type !== "smart_scene" || r.group?.rtype !== "room")
+            if (r.type !== "smart_scene" || !isGroup(r.group?.rtype))
                 continue;
             const slot = r.active_timeslot;
             const day = (r.week_timeslots ?? []).find(w => (w.recurrence ?? []).includes(slot?.weekday));
             const current = sceneById[day?.timeslots?.[slot?.timeslot_id]?.target?.rid] ?? null;
-            (smartByRoom[r.group.rid] = smartByRoom[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r, Current: current });
+            (smartByGroup[r.group.rid] = smartByGroup[r.group.rid] ?? []).push({ Id: r.id, Name: r.metadata?.name ?? "", HueData: r, Current: current });
         }
-        const rooms = data.filter(r => r.type === "room").map(r => ({
+        // Rooms list devices, zones list light services (one light can be in several zones)
+        const group = r => ({
             Id: r.id,
             Name: r.metadata?.name ?? "",
             Archetype: r.metadata?.archetype ?? "",
-            GroupedLight: groupedByRoom[r.id] ? { HueData: groupedByRoom[r.id] } : null,
-            Scenes: scenesByRoom[r.id] ?? [],
-            SmartScenes: smartByRoom[r.id] ?? []
-        }));
+            GroupedLight: groupedByOwner[r.id] ? { HueData: groupedByOwner[r.id] } : null,
+            LightIds: [].concat(...(r.children ?? []).map(c => c.rtype === "light" ? [c.rid] : c.rtype === "device" ? (deviceLights[c.rid] ?? []) : [])),
+            Scenes: scenesByGroup[r.id] ?? [],
+            SmartScenes: smartByGroup[r.id] ?? []
+        });
+        const rooms = data.filter(r => r.type === "room").map(group);
+        const zones = data.filter(r => r.type === "zone").map(group);
         const lights = data.filter(r => r.type === "light").map(l => ({
             Id: l.id,
             Name: l.metadata?.name ?? "",
             Archetype: l.metadata?.archetype ?? "",
             HueData: l,
             // Lights without a zigbee_connectivity service (e.g. Matter/Wi-Fi) count as reachable
-            Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected",
-            Parent: { Id: l.owner?.rid, Parent: { Id: deviceRoom[l.owner?.rid] } }
+            Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected"
         }));
-        return { rooms: rooms, lights: lights, homeGroupedId: homeGroupedId };
+        return { rooms: rooms, zones: zones, lights: lights, homeGroupedId: homeGroupedId };
     }
 
     // Saved targets ("grouped_light:<id>" or "light:<id>", settings and IPC) -> {kind, id}, or null.
@@ -258,14 +260,14 @@ Item {
         return { kind: kind, id: id };
     }
 
-    // Whether a target is on in a normalize() result (or anything with rooms, lights, homeGroupedId).
+    // Whether a target is on in a normalize() result (or anything with rooms, zones, lights, homeGroupedId).
     // The home group counts as on when any reachable light is on: unreachable ones keep a stale state
     function targetIsOn(t, state) {
         if (t.kind === "light")
             return state.lights.find(l => l.Id === t.id)?.HueData?.on?.on ?? false;
-        const room = state.rooms.find(r => r.GroupedLight?.HueData?.id === t.id);
-        if (room)
-            return room.GroupedLight.HueData.on?.on ?? false;
+        const group = state.rooms.concat(state.zones).find(r => r.GroupedLight?.HueData?.id === t.id);
+        if (group)
+            return group.GroupedLight.HueData.on?.on ?? false;
         return t.id === state.homeGroupedId && state.lights.some(l => l.Reachable && l.HueData?.on?.on);
     }
 

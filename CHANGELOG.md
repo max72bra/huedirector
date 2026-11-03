@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+- Zones: zone cards and pages in the popout, below the rooms; zones as favorite room, favorite light, event rule targets and IPC names.
+- The popout header has the title, the settings button and a chip with the lights on (tinted with their color) that turns all lights off, in one row aligned with the cards; "Rooms" and "Zones" section titles; a line under the header shows only while the page scrolls.
+
 ## 1.2.7
 
 - Russian translation.

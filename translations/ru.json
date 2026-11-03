@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "Избранная комната"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "Комната, показываемая на панели (значок и число включённых ламп)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "Комната или зона, показываемая на панели (значок и число включённых ламп)"
     },
     "System events": {
         "System events": "Системные события"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Включайте или выключайте лампу, комнату или все лампы, когда в сеансе что-то происходит. Правила выхода из системы требуют сеанса под управлением systemd (например, uwsm). Перед ждущим режимом и выключением система несколько секунд ждёт, пока лампы будут настроены."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Включайте или выключайте лампу, комнату, зону или все лампы, когда в сеансе что-то происходит. Правила выхода из системы требуют сеанса под управлением systemd (например, uwsm). Перед ждущим режимом и выключением система несколько секунд ждёт, пока лампы будут настроены."
     },
     "Nothing": {
         "Nothing": "Ничего"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "Эффект"
+    },
+    "Zones": {
+        "Zones": "Зоны"
+    },
+    "Zone · %1": {
+        "Zone · %1": "Зона · %1"
+    },
+    "Rooms": {
+        "Rooms": "Комнаты"
+    },
+    "All off": {
+        "All off": "Всё выключено"
     }
 }

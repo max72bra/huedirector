@@ -9,11 +9,12 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 ## Features
 
 ### In the bar
-- **Status icon** for the whole home or a favorite room: a lit bulb and the number of lights on (the number can be hidden), an off bulb when everything is off, a broken link when not paired, red when the bridge can't be reached.
-- **Right-click** turns your favorite light, room or all lights on or off.
+- **Status icon** for the whole home or a favorite room or zone: a lit bulb and the number of lights on (the number can be hidden), an off bulb when everything is off, a broken link when not paired, red when the bridge can't be reached.
+- **Right-click** turns your favorite light, room, zone or all lights on or off.
 
 ### In the popout
-- **Room cards**: icon from the room type set in the Hue app, how many lights are on, brightness, an on/off switch and a brightness slider. Each card is tinted with the current color of its lights. One button turns off every light in the home, another opens the plugin settings.
+- **Room cards**: icon from the room type set in the Hue app, how many lights are on, brightness, an on/off switch and a brightness slider. Each card is tinted with the current color of its lights. The header shows how many lights are on, in a chip tinted with their color: click it to turn off every light in the home. Another button opens the plugin settings.
+- **Zone cards**: zones from the Hue app (groups of lights across rooms) get the same cards, in their own section below the rooms, and the same page.
 - **Room page** (click a card):
   - **Scenes** as tiles painted with each scene's own colors. The current scene is marked, also when the bridge no longer reports it active (it is recognized from the lights' state).
   - **Dynamic scenes**: scenes with a color palette have a play button that keeps their colors slowly cycling.
@@ -23,7 +24,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Identify**: makes a light pulse its brightness twice in 2.5 seconds, then restores it, so you can tell which lamp it is.
 
 ### Session events
-- Turn a light, a room or all lights on or off when you **log in or out**, **lock or unlock** the screen, when the **monitors turn off or on**, on **suspend and resume**, on **reboot** and on **power off**. See [Automations](#automations).
+- Turn a light, a room, a zone or all lights on or off when you **log in or out**, **lock or unlock** the screen, when the **monitors turn off or on**, on **suspend and resume**, on **reboot** and on **power off**. See [Automations](#automations).
 
 ### Everywhere
 - **Live updates**: changes made from the Hue app or from switches show up within a second, through the bridge event stream; if the stream fails, the plugin polls every 30 seconds.
@@ -39,7 +40,6 @@ The plugin talks only to your Hue Bridge. The only internet request is bridge di
 
 - The hue slider sets fully saturated colors; use the color picker for pastel tones.
 - Colors shown on screen are an approximation: Hue lamps can produce colors a monitor can't display.
-- Only rooms are shown; zones are not supported yet.
 - Hue Bridge v1 (the round first-generation bridge) is not supported: it has no API v2.
 
 ## Requirements
@@ -105,11 +105,11 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 ## Settings
 
 - **Hue Bridge**: shows the paired bridge and lets you pair again.
-- **Favorite room**: room shown in the bar pill (icon and number of lights on). Default: all rooms.
+- **Favorite room**: room or zone shown in the bar pill (icon and number of lights on). Default: all rooms.
 - **Fade time**: how long lights take to turn on or off and to change scene: the bridge default (0.4 s), instant, 1, 2 or 4 seconds. Brightness and color sliders are not faded.
 - **Dynamic scene speed**: how fast colors cycle when you play a dynamic scene. The speed is saved in the scene on the bridge, so the Hue app uses it too.
 - **Show lights on count**: number next to the bar icon. Turn it off to keep only the icon, which still changes with the lights' state. Default: on.
-- **Favorite light**: a light, a room or all lights. Right-click the bar icon to turn it on or off.
+- **Favorite light**: a light, a room, a zone or all lights. Right-click the bar icon to turn it on or off.
 - **System events**: the automations described above.
 
 ## Command line and keybindings
@@ -119,9 +119,9 @@ The plugin answers `dms ipc` calls, so you can bind lights to keys:
 | Command | Effect |
 |---|---|
 | `dms ipc call hueDirector toggle` | Toggles the favorite light (Settings → Favorite light) |
-| `dms ipc call hueDirector on <target>` | Turns on `all`, a room or a light, by name |
+| `dms ipc call hueDirector on <target>` | Turns on `all`, a room, a zone or a light, by name (rooms win over zones with the same name) |
 | `dms ipc call hueDirector off <target>` | Turns it off |
-| `dms ipc call hueDirector scene <name>` | Activates a scene; use `Room/Scene` when several rooms have a scene with that name |
+| `dms ipc call hueDirector scene <name>` | Activates a scene; use `Room/Scene` (or `Zone/Scene`) when several rooms or zones have a scene with that name |
 
 Names are case-insensitive; quote names with spaces. Example for Hyprland:
 
@@ -157,7 +157,7 @@ The interface is in English and follows the Dux Shell language (Settings → Loc
 
 To add a language, copy `translations/it.json` to `translations/<locale>.json` (e.g. `de.json`, `pt_BR.json`) and translate the values. Each key is the English text; placeholders like `%1` must stay in the translation. Missing terms fall back to English. Reload with `dms ipc call plugins reload hueDirector`.
 
-Room, light and scene names come from your Hue Bridge and are shown as they are.
+Room, zone, light and scene names come from your Hue Bridge and are shown as they are.
 
 ## Credits
 

@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "Habitación favorita"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "Habitación mostrada en la barra (icono y número de luces encendidas)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "Habitación o zona mostrada en la barra (icono y número de luces encendidas)"
     },
     "System events": {
         "System events": "Eventos del sistema"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Enciende o apaga una luz, una habitación o todas las luces cuando ocurre algo en tu sesión. Las reglas de cierre de sesión requieren una sesión gestionada por systemd (p. ej. uwsm). Antes de suspender y apagar, el sistema espera unos segundos a que se ajusten las luces."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Enciende o apaga una luz, una habitación, una zona o todas las luces cuando ocurre algo en tu sesión. Las reglas de cierre de sesión requieren una sesión gestionada por systemd (p. ej. uwsm). Antes de suspender y apagar, el sistema espera unos segundos a que se ajusten las luces."
     },
     "Nothing": {
         "Nothing": "Nada"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "Efecto"
+    },
+    "Zones": {
+        "Zones": "Zonas"
+    },
+    "Zone · %1": {
+        "Zone · %1": "Zona · %1"
+    },
+    "Rooms": {
+        "Rooms": "Habitaciones"
+    },
+    "All off": {
+        "All off": "Todo apagado"
     }
 }

@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "Stanza preferita"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "Stanza mostrata nella barra (icona e numero di luci accese)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "Stanza o zona mostrata nella barra (icona e numero di luci accese)"
     },
     "System events": {
         "System events": "Eventi di sistema"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Accendi o spegni una luce, una stanza o tutte le luci quando succede qualcosa nella sessione. Le regole di disconnessione richiedono una sessione gestita da systemd (ad es. uwsm). Prima di sospensione e spegnimento il sistema attende qualche secondo che le luci vengano impostate."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Accendi o spegni una luce, una stanza, una zona o tutte le luci quando succede qualcosa nella sessione. Le regole di disconnessione richiedono una sessione gestita da systemd (ad es. uwsm). Prima di sospensione e spegnimento il sistema attende qualche secondo che le luci vengano impostate."
     },
     "Nothing": {
         "Nothing": "Niente"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "Effetto"
+    },
+    "Zones": {
+        "Zones": "Zone"
+    },
+    "Zone · %1": {
+        "Zone · %1": "Zona · %1"
+    },
+    "Rooms": {
+        "Rooms": "Stanze"
+    },
+    "All off": {
+        "All off": "Tutto spento"
     }
 }

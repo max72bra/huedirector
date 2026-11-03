@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "常用房间"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "在栏中显示的房间（图标和已开灯数量）"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "在栏中显示的房间或区域（图标和已开灯数量）"
     },
     "System events": {
         "System events": "系统事件"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "当会话中发生某些事件时，打开或关闭一盏灯、一个房间或所有灯。注销规则需要由 systemd 管理的会话（例如 uwsm）。在睡眠和关机前，系统会等待几秒钟以完成灯光设置。"
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "当会话中发生某些事件时，打开或关闭一盏灯、一个房间、一个区域或所有灯。注销规则需要由 systemd 管理的会话（例如 uwsm）。在睡眠和关机前，系统会等待几秒钟以完成灯光设置。"
     },
     "Nothing": {
         "Nothing": "无"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "效果"
+    },
+    "Zones": {
+        "Zones": "区域"
+    },
+    "Zone · %1": {
+        "Zone · %1": "区域 · %1"
+    },
+    "Rooms": {
+        "Rooms": "房间"
+    },
+    "All off": {
+        "All off": "全部关闭"
     }
 }

@@ -17,6 +17,7 @@ PluginComponent {
     readonly property var bridge: hueBridge
     readonly property var pairing: pairingItem
     property var rooms: []
+    property var zones: []
     property var lights: []
     // grouped_light of the whole home, for "all off"
     property string homeGroupedId: ""
@@ -58,6 +59,7 @@ PluginComponent {
             // Forgotten or never paired: drop the old bridge's rooms and lights (settings targets, IPC)
             paired = false;
             rooms = [];
+            zones = [];
             lights = [];
             homeGroupedId = "";
             loaded = false;
@@ -68,8 +70,9 @@ PluginComponent {
                 return;
             // Bridge order is not stable (scenes move after activation): sort everything by name
             const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
-            result.rooms.forEach(r => r.Scenes.sort(byName));
+            result.rooms.concat(result.zones).forEach(r => r.Scenes.sort(byName));
             rooms = result.rooms.sort(byName);
+            zones = result.zones.sort(byName);
             lights = result.lights.sort(byName);
             homeGroupedId = result.homeGroupedId;
             error = "";
@@ -90,7 +93,7 @@ PluginComponent {
         });
     }
 
-    // Rooms are controlled through their grouped_light service
+    // Rooms and zones are controlled through their grouped_light service
     function setRoom(room, body) {
         const groupedId = room?.GroupedLight?.HueData?.id;
         if (groupedId)
@@ -103,7 +106,7 @@ PluginComponent {
             setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
     }
 
-    // Favorite light, room or whole home (Settings → Favorite light): bar right click and IPC toggle
+    // Favorite light, room, zone or whole home (Settings → Favorite light): bar right click and IPC toggle
     function toggleFavorite() {
         const t = hueBridge.parseTarget(pluginData?.favoriteLight);
         if (!t)
@@ -194,7 +197,7 @@ PluginComponent {
     }
 
     // Resource types shown by the UI; other events (sensors, ...) don't refresh
-    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zigbee_connectivity"]
+    readonly property var watchedTypes: ["light", "grouped_light", "scene", "smart_scene", "room", "zone", "zigbee_connectivity"]
 
     Process {
         id: eventsProcess
@@ -322,14 +325,14 @@ PluginComponent {
     // --- Command line / keybindings: dms ipc call hueDirector <function> [arg]. Uses the live state,
     // so calls answer with the outcome ("ok" or what is wrong)
 
-    // "all", a room name or a light name (case-insensitive); rooms win over lights with the same name
+    // "all", a room, zone or light name (case-insensitive); with the same name rooms win, then zones
     function findTarget(name) {
         const n = (name ?? "").trim().toLowerCase();
         if (n === "all")
             return homeGroupedId ? { kind: "grouped_light", id: homeGroupedId } : null;
-        const room = rooms.find(r => r.Name.toLowerCase() === n && r.GroupedLight);
-        if (room)
-            return { kind: "grouped_light", id: room.GroupedLight.HueData.id };
+        const group = rooms.concat(zones).find(r => r.Name.toLowerCase() === n && r.GroupedLight);
+        if (group)
+            return { kind: "grouped_light", id: group.GroupedLight.HueData.id };
         const light = lights.find(l => l.Name.toLowerCase() === n);
         return light ? { kind: "light", id: light.Id } : null;
     }
@@ -341,7 +344,7 @@ PluginComponent {
     function setTarget(name, on) {
         const t = findTarget(name);
         if (!t)
-            return "no room or light named " + name;
+            return "no room, zone or light named " + name;
         setResource(t.kind, t.id, { on: { on: on } });
         return "ok";
     }
@@ -349,7 +352,7 @@ PluginComponent {
     IpcHandler {
         target: "hueDirector"
 
-        // Toggles the favorite light, room or all lights (Settings → Favorite light)
+        // Toggles the favorite light, room, zone or all lights (Settings → Favorite light)
         function toggle(): string {
             return root.ipcReady() || root.toggleFavorite();
         }
@@ -362,7 +365,7 @@ PluginComponent {
             return root.ipcReady() || root.setTarget(target, false);
         }
 
-        // "Scene" or "Room/Scene" when the name exists in several rooms (case-insensitive)
+        // "Scene" or "Room/Scene" (also "Zone/Scene") when the name exists in several groups (case-insensitive)
         function scene(name: string): string {
             const notReady = root.ipcReady();
             if (notReady)
@@ -370,11 +373,12 @@ PluginComponent {
             const parts = name.split("/");
             const sceneName = parts.pop().trim().toLowerCase();
             const roomName = parts.join("/").trim().toLowerCase();
-            const room = roomName ? root.rooms.find(r => r.Name.toLowerCase() === roomName) : null;
+            const groups = root.rooms.concat(root.zones);
+            const room = roomName ? groups.find(r => r.Name.toLowerCase() === roomName) : null;
             if (roomName && !room)
-                return "no room named " + roomName;
+                return "no room or zone named " + roomName;
             // no Array.flatMap in the shell's JS engine
-            const scenes = [].concat(...(room ? [room] : root.rooms).map(r => r.Scenes));
+            const scenes = [].concat(...(room ? [room] : groups).map(r => r.Scenes));
             const sc = scenes.find(s => s.Name.toLowerCase() === sceneName);
             if (!sc)
                 return "no scene named " + name;

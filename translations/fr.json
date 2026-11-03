@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "Pièce favorite"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "Pièce affichée dans la barre (icône et nombre de lumières allumées)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "Pièce ou zone affichée dans la barre (icône et nombre de lumières allumées)"
     },
     "System events": {
         "System events": "Événements système"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Allumez ou éteignez une lumière, une pièce ou toutes les lumières lorsqu'un événement se produit dans votre session. Les règles de déconnexion nécessitent une session gérée par systemd (p. ex. uwsm). Avant la mise en veille et l'arrêt, le système attend quelques secondes que les lumières soient réglées."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Allumez ou éteignez une lumière, une pièce, une zone ou toutes les lumières lorsqu'un événement se produit dans votre session. Les règles de déconnexion nécessitent une session gérée par systemd (p. ex. uwsm). Avant la mise en veille et l'arrêt, le système attend quelques secondes que les lumières soient réglées."
     },
     "Nothing": {
         "Nothing": "Rien"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "Effet"
+    },
+    "Zones": {
+        "Zones": "Zones"
+    },
+    "Zone · %1": {
+        "Zone · %1": "Zone · %1"
+    },
+    "Rooms": {
+        "Rooms": "Pièces"
+    },
+    "All off": {
+        "All off": "Tout éteint"
     }
 }

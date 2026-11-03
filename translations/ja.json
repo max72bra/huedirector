@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "お気に入りの部屋"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "バーに表示する部屋（アイコンと点灯中のライト数）"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "バーに表示する部屋またはゾーン（アイコンと点灯中のライト数）"
     },
     "System events": {
         "System events": "システムイベント"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "セッションで何かが起きたときに、ライト・部屋・すべてのライトを点灯または消灯します。ログアウトのルールには systemd が管理するセッション（uwsm など）が必要です。スリープや電源オフの前に、システムはライトの設定のため数秒待機します。"
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "セッションで何かが起きたときに、ライト・部屋・ゾーン・すべてのライトを点灯または消灯します。ログアウトのルールには systemd が管理するセッション（uwsm など）が必要です。スリープや電源オフの前に、システムはライトの設定のため数秒待機します。"
     },
     "Nothing": {
         "Nothing": "なし"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "エフェクト"
+    },
+    "Zones": {
+        "Zones": "ゾーン"
+    },
+    "Zone · %1": {
+        "Zone · %1": "ゾーン · %1"
+    },
+    "Rooms": {
+        "Rooms": "部屋"
+    },
+    "All off": {
+        "All off": "すべて消灯"
     }
 }

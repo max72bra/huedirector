@@ -77,14 +77,14 @@
     "Favorite room": {
         "Favorite room": "즐겨찾는 방"
     },
-    "Room shown in the bar pill (icon and lights on count)": {
-        "Room shown in the bar pill (icon and lights on count)": "바에 표시할 방 (아이콘 및 켜진 조명 수)"
+    "Room or zone shown in the bar pill (icon and lights on count)": {
+        "Room or zone shown in the bar pill (icon and lights on count)": "바에 표시할 방 또는 구역 (아이콘 및 켜진 조명 수)"
     },
     "System events": {
         "System events": "시스템 이벤트"
     },
-    "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "세션에서 특정 이벤트가 발생하면 조명, 방 또는 모든 조명을 켜거나 끕니다. 로그아웃 규칙에는 systemd가 관리하는 세션(예: uwsm)이 필요합니다. 절전 및 전원 끄기 전에 시스템은 조명이 설정될 때까지 몇 초 동안 기다립니다."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "세션에서 특정 이벤트가 발생하면 조명, 방, 구역 또는 모든 조명을 켜거나 끕니다. 로그아웃 규칙에는 systemd가 관리하는 세션(예: uwsm)이 필요합니다. 절전 및 전원 끄기 전에 시스템은 조명이 설정될 때까지 몇 초 동안 기다립니다."
     },
     "Nothing": {
         "Nothing": "없음"
@@ -298,5 +298,17 @@
     },
     "Effect": {
         "Effect": "효과"
+    },
+    "Zones": {
+        "Zones": "구역"
+    },
+    "Zone · %1": {
+        "Zone · %1": "구역 · %1"
+    },
+    "Rooms": {
+        "Rooms": "방"
+    },
+    "All off": {
+        "All off": "모두 꺼짐"
     }
 }

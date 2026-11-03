@@ -17,18 +17,21 @@ PluginSettings {
     property var targetOptions: []
     // Ids and names only: the options are rebuilt when these change, not on every brightness event,
     // which would reset a dropdown while it is open
-    readonly property string optionsKey: JSON.stringify([hue?.homeGroupedId ?? "", (hue?.rooms ?? []).map(r => [r.Id, r.Name, r.GroupedLight?.HueData?.id ?? ""]), (hue?.lights ?? []).map(l => [l.Id, l.Name])])
+    readonly property string optionsKey: JSON.stringify([hue?.homeGroupedId ?? "", (hue?.rooms ?? []).concat(hue?.zones ?? []).map(r => [r.Id, r.Name, r.GroupedLight?.HueData?.id ?? ""]), (hue?.lights ?? []).map(l => [l.Id, l.Name])])
 
     onOptionsKeyChanged: rebuildOptions()
     Component.onCompleted: rebuildOptions()
 
     function rebuildOptions() {
         const byLabel = (a, b) => a.label.localeCompare(b.label);
-        roomOptions = (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort(byLabel);
+        const zoneLabel = name => I18n.trFor("hueDirector", "Zone · %1").arg(name);
+        roomOptions = (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort(byLabel)
+            .concat((hue?.zones ?? []).map(z => ({ label: zoneLabel(z.Name), value: z.Id })).sort(byLabel));
         const rooms = (hue?.rooms ?? []).filter(r => r.GroupedLight).map(r => ({ label: I18n.trFor("hueDirector", "Room · %1").arg(r.Name), value: "grouped_light:" + r.GroupedLight.HueData.id })).sort(byLabel);
+        const zones = (hue?.zones ?? []).filter(z => z.GroupedLight).map(z => ({ label: zoneLabel(z.Name), value: "grouped_light:" + z.GroupedLight.HueData.id })).sort(byLabel);
         const lights = (hue?.lights ?? []).map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
         const home = hue?.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + hue.homeGroupedId }] : [];
-        targetOptions = home.concat(rooms, lights);
+        targetOptions = home.concat(rooms, zones, lights);
     }
 
     // Width of the on/off buttons column (two small icon buttons)
@@ -62,8 +65,8 @@ PluginSettings {
     SelectionSetting {
         settingKey: "favoriteRoom"
         label: I18n.trFor("hueDirector", "Favorite room")
-        description: I18n.trFor("hueDirector", "Room shown in the bar pill (icon and lights on count)")
-        // Room Id is stored, so renaming the room keeps the setting
+        description: I18n.trFor("hueDirector", "Room or zone shown in the bar pill (icon and lights on count)")
+        // Room or zone Id is stored, so renaming it keeps the setting
         options: [{ label: I18n.trFor("hueDirector", "All rooms"), value: "all" }].concat(root.roomOptions)
         defaultValue: "all"
     }
@@ -124,7 +127,7 @@ PluginSettings {
     StyledText {
         width: parent.width
         wrapMode: Text.WordWrap
-        text: I18n.trFor("hueDirector", "Turn a light, a room or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.")
+        text: I18n.trFor("hueDirector", "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.")
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
     }

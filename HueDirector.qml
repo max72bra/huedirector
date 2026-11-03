@@ -5,6 +5,7 @@ import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import "."
+import "Accent.js" as Accent
 
 PluginComponent {
     id: root
@@ -12,6 +13,9 @@ PluginComponent {
     // State, commands and the event stream live in the daemon (HueEvents.qml), one for all bars
     readonly property var hue: PluginService.pluginDaemonInstances["hueDirector"] ?? null
     readonly property var rooms: hue?.rooms ?? []
+    readonly property var zones: hue?.zones ?? []
+    // Rooms first, then zones: home cards, room page and favorite room look them up here
+    readonly property var groups: rooms.concat(zones)
     readonly property var lights: hue?.lights ?? []
     readonly property string homeGroupedId: hue?.homeGroupedId ?? ""
     readonly property string error: hue?.error ?? ""
@@ -19,12 +23,12 @@ PluginComponent {
     readonly property bool paired: hue?.paired ?? true
     readonly property bool needsPairing: hue?.needsPairing ?? false
     readonly property int lightsOn: hue?.lightsOn ?? 0
-    // Room whose page is open in the popout; "" shows the room cards
+    // Room or zone whose page is open in the popout; "" shows the cards
     property string openRoomId: ""
 
-    // Pill shows the favorite room only; "all" or a removed room falls back to the whole home
+    // Pill shows the favorite room or zone only; "all" or a removed one falls back to the whole home
     readonly property string favoriteRoomId: pluginData?.favoriteRoom ?? ""
-    readonly property bool hasFavorite: rooms.some(r => r.Id === favoriteRoomId)
+    readonly property bool hasFavorite: groups.some(r => r.Id === favoriteRoomId)
     readonly property int pillLightsOn: hasFavorite ? roomLightsOf(favoriteRoomId).filter(l => l.Reachable && l.HueData?.on?.on).length : lightsOn
     // Settings: number next to the pill icon (default on); off leaves only the icon and its color
     readonly property bool showLightCount: pluginData?.showLightCount ?? true
@@ -32,7 +36,8 @@ PluginComponent {
     readonly property color pillColor: paired && error ? Theme.error : (paired && pillLightsOn > 0 ? Theme.primary : Theme.surfaceText)
 
     function roomLightsOf(roomId) {
-        return lights.filter(l => l.Parent?.Parent?.Id === roomId);
+        const ids = groups.find(r => r.Id === roomId)?.LightIds ?? [];
+        return lights.filter(l => ids.includes(l.Id));
     }
 
     // Current color of a light as [r, g, b] in 0..1 at full brightness, or null when off, unreachable
@@ -89,8 +94,8 @@ PluginComponent {
         else
             openRoomId = "";
     }
-    // Back to the room cards if the open room was removed from the bridge
-    onRoomsChanged: if (openRoomId && !rooms.some(r => r.Id === openRoomId)) openRoomId = ""
+    // Back to the cards if the open room or zone was removed from the bridge
+    onGroupsChanged: if (openRoomId && !groups.some(r => r.Id === openRoomId)) openRoomId = ""
 
     // Material Symbols for Hue room archetypes; unknown ones fall back to meeting_room
     readonly property var roomIcons: ({
@@ -239,13 +244,134 @@ PluginComponent {
     popoutContent: Component {
         PopoutComponent {
             id: popout
-            headerText: "Hue Director"
-            // One-line header: the lights-on summary sits in the home page toolbar, details only show errors
-            // (PairingPanel already says "Not paired"; certChanged shows its error here)
-            detailsText: root.paired ? root.error : ""
+            // Own header instead of headerText/headerActions: the stock one indents the title by spacingS,
+            // out of line with the cards below. Same height and title font as the stock header
+            Item {
+                id: header
+                width: parent.width
+                height: 40
+
+                StyledText {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Hue Director"
+                    font.pixelSize: Theme.fontSizeLarge + 4
+                    color: Theme.surfaceText
+                }
+
+                // The lights-on summary and the buttons sit next to the title
+                Row {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !root.needsPairing
+                    spacing: Theme.spacingXS
+
+                    DIconButton {
+                        iconName: "settings"
+                        tooltipText: I18n.trFor("hueDirector", "Settings and automations")
+                        onClicked: {
+                            PopoutService.openSettingsWithTab("plugin:hueDirector");
+                            popout.closePopout?.();
+                        }
+                    }
+                    // Master chip: lights on over total, tinted with their average color; click turns everything off
+                    Rectangle {
+                        id: masterChip
+
+                        readonly property bool anyOn: root.lightsOn > 0
+                        readonly property bool canTurnOff: anyOn && root.homeGroupedId !== ""
+                        readonly property color accent: Accent.visible(root.rgbColor(root.averageRgb(root.lights)), Theme.surfaceContainer)
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: chipRow.implicitWidth + Theme.spacingM * 2
+                        height: Theme.iconButtonSize
+                        radius: height / 2
+                        color: anyOn ? Qt.tint(Theme.surfaceContainerHigh, Qt.rgba(accent.r, accent.g, accent.b, 0.3)) : Theme.surfaceContainerHigh
+                        Accessible.role: Accessible.Button
+                        Accessible.name: (root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…")) + (canTurnOff ? ". " + I18n.trFor("hueDirector", "Turn off all lights") : "")
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Theme.longDuration
+                            }
+                        }
+
+                        Row {
+                            id: chipRow
+                            anchors.centerIn: parent
+                            spacing: Theme.spacingXS
+
+                            DIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: masterChip.anyOn ? "lightbulb" : "light_off"
+                                size: Theme.iconSizeSmall
+                                color: masterChip.anyOn ? masterChip.accent : Theme.surfaceVariantText
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: !root.loaded ? I18n.trFor("hueDirector", "Loading…") : masterChip.anyOn ? root.lightsOn + "/" + root.lights.length : I18n.trFor("hueDirector", "All off")
+                                font.pixelSize: Theme.fontSizeMedium
+                                font.weight: Font.Medium
+                                color: masterChip.anyOn ? Theme.surfaceText : Theme.surfaceVariantText
+                            }
+
+                            DIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: masterChip.canTurnOff
+                                name: "power_settings_new"
+                                size: Theme.iconSizeSmall
+                                color: Theme.surfaceText
+                            }
+                        }
+
+                        StateLayer {
+                            disabled: !masterChip.canTurnOff
+                            stateColor: Theme.surfaceText
+                            tooltipText: masterChip.canTurnOff ? I18n.trFor("hueDirector", "Turn off all lights") : null
+                            onClicked: if (masterChip.canTurnOff) root.hue.setResource("grouped_light", root.homeGroupedId, { on: { on: false } })
+                        }
+                    }
+                }
+            }
+
+            // Errors only: PairingPanel already says "Not paired"; certChanged shows its error here
+            StyledText {
+                id: errorText
+                width: parent.width
+                bottomPadding: Theme.spacingS
+                text: root.paired ? root.error : ""
+                visible: text.length > 0
+                wrapMode: Text.WordWrap
+                font.pixelSize: Theme.fontSizeMedium
+                color: Theme.surfaceVariantText
+            }
+
             PairingPanel {
                 hue: root.hue
                 visible: root.needsPairing
+            }
+
+            // Gap between header and page; the line shows only while the page is scrolled under the header
+            Item {
+                id: headerDivider
+                visible: !root.needsPairing
+                width: parent.width
+                height: Theme.spacingL
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: Theme.outlineVariant
+                    opacity: (root.openRoomId === "" ? homeFlick : roomFlick).contentY > 0 ? 1 : 0
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Theme.shortDuration
+                        }
+                    }
+                }
             }
 
             // PluginPopout sizes the popout from this component's implicitHeight, so the popout grows
@@ -253,10 +379,11 @@ PluginComponent {
             Item {
                 visible: !root.needsPairing
                 width: parent.width
-                height: Math.min((root.parentScreen?.height ?? 1000) * 0.75 - popout.headerHeight - popout.detailsHeight, root.openRoomId === "" ? homeColumn.implicitHeight : roomPage.implicitHeight)
+                height: Math.min((root.parentScreen?.height ?? 1000) * 0.75 - header.height - (errorText.visible ? errorText.implicitHeight : 0) - headerDivider.height, root.openRoomId === "" ? homeColumn.implicitHeight : roomPage.implicitHeight)
 
-                // Home: one card per room
+                // Home: one card per room, then one per zone
                 DFlickable {
+                    id: homeFlick
                     anchors.fill: parent
                     visible: root.openRoomId === ""
                     contentWidth: width
@@ -268,69 +395,54 @@ PluginComponent {
                         width: parent.width
                         spacing: Theme.spacingS
 
-                        Item {
-                            width: parent.width
-                            height: settingsButton.height
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.loaded ? I18n.trFor("hueDirector", "%1 of %2 lights on").arg(root.lightsOn).arg(root.lights.length) : I18n.trFor("hueDirector", "Loading…")
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Font.Medium
-                                color: Theme.surfaceVariantText
-                            }
-
-                            DIconButton {
-                                id: settingsButton
-                                anchors.right: allOffButton.visible ? allOffButton.left : parent.right
-                                iconName: "settings"
-                                tooltipText: I18n.trFor("hueDirector", "Settings and automations")
-                                onClicked: {
-                                    PopoutService.openSettingsWithTab("plugin:hueDirector");
-                                    popout.closePopout?.();
-                                }
-                            }
-
-                            DIconButton {
-                                id: allOffButton
-                                anchors.right: parent.right
-                                visible: root.lightsOn > 0 && root.homeGroupedId !== ""
-                                iconName: "power_settings_new"
-                                tooltipText: I18n.trFor("hueDirector", "Turn off all lights")
-                                onClicked: root.hue.setResource("grouped_light", root.homeGroupedId, { on: { on: false } })
-                            }
-                        }
-
                         Repeater {
                             // Count, not the array: delegates survive refreshes, so a slider drag is not interrupted
-                            model: root.rooms.length
+                            model: root.groups.length
 
-                            RoomCard {
+                            Column {
                                 required property int index
-                                readonly property var room: root.rooms[index]
-                                readonly property var roomLights: root.roomLightsOf(room?.Id)
-                                readonly property int onCount: roomLights.filter(l => l.Reachable && l.HueData?.on?.on).length
-                                readonly property int unreachableCount: roomLights.filter(l => !l.Reachable).length
-                                readonly property string unreachableText: unreachableCount ? " · " + I18n.trFor("hueDirector", "%1 unreachable").arg(unreachableCount) : ""
+                                readonly property var room: root.groups[index]
 
                                 width: parent.width
-                                name: room?.Name ?? ""
-                                icon: root.roomIcon(room?.Archetype)
-                                isOn: room?.GroupedLight?.HueData?.on?.on ?? false
-                                brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
-                                dimmable: !!room?.GroupedLight?.HueData?.dimming
-                                accentColor: root.rgbColor(root.averageRgb(roomLights))
-                                subtitle: (isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")) + unreachableText
-                                onToggleRequested: on => root.hue.setRoom(room, { on: { on: on } })
-                                onBrightnessRequested: value => root.hue.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
-                                onClicked: root.openRoomId = room.Id
+                                spacing: Theme.spacingS
+
+                                // Section titles above the first room and the first zone
+                                StyledText {
+                                    visible: index === 0 || index === root.rooms.length
+                                    topPadding: index > 0 ? Theme.spacingS : 0
+                                    text: index < root.rooms.length ? I18n.trFor("hueDirector", "Rooms") : I18n.trFor("hueDirector", "Zones")
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Font.Medium
+                                    color: Theme.surfaceVariantText
+                                }
+
+                                RoomCard {
+                                    readonly property var room: parent.room
+                                    readonly property var roomLights: root.roomLightsOf(room?.Id)
+                                    readonly property int onCount: roomLights.filter(l => l.Reachable && l.HueData?.on?.on).length
+                                    readonly property int unreachableCount: roomLights.filter(l => !l.Reachable).length
+                                    readonly property string unreachableText: unreachableCount ? " · " + I18n.trFor("hueDirector", "%1 unreachable").arg(unreachableCount) : ""
+
+                                    width: parent.width
+                                    name: room?.Name ?? ""
+                                    icon: root.roomIcon(room?.Archetype)
+                                    isOn: room?.GroupedLight?.HueData?.on?.on ?? false
+                                    brightness: Math.round(room?.GroupedLight?.HueData?.dimming?.brightness ?? 0)
+                                    dimmable: !!room?.GroupedLight?.HueData?.dimming
+                                    accentColor: root.rgbColor(root.averageRgb(roomLights))
+                                    subtitle: (isOn ? I18n.trFor("hueDirector", "%1 of %2 on · %3%").arg(onCount).arg(roomLights.length).arg(brightness) : I18n.trFor("hueDirector", "Off")) + unreachableText
+                                    onToggleRequested: on => root.hue.setRoom(room, { on: { on: on } })
+                                    onBrightnessRequested: value => root.hue.setRoom(room, { on: { on: true }, dimming: { brightness: value } })
+                                    onClicked: root.openRoomId = room.Id
+                                }
                             }
                         }
                     }
                 }
 
-                // Room page: scenes and lights of root.openRoomId
+                // Room or zone page: scenes and lights of root.openRoomId
                 DFlickable {
+                    id: roomFlick
                     anchors.fill: parent
                     visible: root.openRoomId !== ""
                     contentWidth: width
@@ -340,7 +452,7 @@ PluginComponent {
                     Column {
                         id: roomPage
 
-                        readonly property var room: root.rooms.find(r => r.Id === root.openRoomId) ?? null
+                        readonly property var room: root.groups.find(r => r.Id === root.openRoomId) ?? null
                         readonly property var roomLights: root.roomLightsOf(room?.Id)
                         readonly property var scenes: room?.Scenes ?? []
                         readonly property var smartScenes: room?.SmartScenes ?? []
