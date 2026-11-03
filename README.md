@@ -21,6 +21,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
   - **Smart scenes** (a different scene for each time of day, from the Hue app) are marked with a clock; click to start or stop them.
   - **Lights**: switch, brightness, and a mark on unreachable lights (unplugged or out of range).
 - **Light controls** (palette button on a light): color temperature in Kelvin, a rainbow hue slider, the shell color picker for any exact color (hex, color area, eyedropper, recent colors), and a menu of light effects (candle, fireplace, prism, sparkle, ...) with a 30-minute sunrise or sunset.
+- **Gradient lights** (lightstrips, Play gradient, ...): one color for each point the light supports (5 on current models), each set with the color picker, and the gradient style (blend, mirrored blend, scattered, segments) when the light offers more than one.
 - **Identify**: makes a light pulse its brightness twice in 2.5 seconds, then restores it, so you can tell which lamp it is.
 
 ### Session events

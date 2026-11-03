@@ -106,6 +106,19 @@ PluginComponent {
             setResource("light", lightId, { on: { on: true }, color: { xy: xy } });
     }
 
+    // Gradient lights: points (2..points_capable) spread along the light; mode optional (keeps the current one).
+    // A point is the bridge's xy {x, y}, sent as is, or a color. Black has no xy: it becomes the darkest gray
+    function setGradient(lightId, colors, mode) {
+        const toXy = c => c.x !== undefined ? { x: c.x, y: c.y } : hueBridge.rgbToXy(c) ?? hueBridge.rgbToXy(Qt.rgba(0.01, 0.01, 0.01, 1));
+        const points = colors.map(c => ({ color: { xy: toXy(c) } }));
+        if (points.length < 2)
+            return;
+        const gradient = { points: points };
+        if (mode)
+            gradient.mode = mode;
+        setResource("light", lightId, { on: { on: true }, gradient: gradient });
+    }
+
     // Favorite light, room, zone or whole home (Settings → Favorite light): bar right click and IPC toggle
     function toggleFavorite() {
         const t = hueBridge.parseTarget(pluginData?.favoriteLight);

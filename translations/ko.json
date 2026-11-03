@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "모두 꺼짐"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "그라데이션 색상 %1"
+    },
+    "Gradient style": {
+        "Gradient style": "그라데이션 스타일"
+    },
+    "Blend": {
+        "Blend": "블렌드"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "미러 블렌드"
+    },
+    "Scattered": {
+        "Scattered": "흩어짐"
+    },
+    "Segments": {
+        "Segments": "세그먼트"
     }
 }

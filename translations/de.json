@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "Alle aus"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "Verlaufsfarbe %1"
+    },
+    "Gradient style": {
+        "Gradient style": "Verlaufsstil"
+    },
+    "Blend": {
+        "Blend": "Fließend"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "Gespiegelt"
+    },
+    "Scattered": {
+        "Scattered": "Verstreut"
+    },
+    "Segments": {
+        "Segments": "Segmente"
     }
 }

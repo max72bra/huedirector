@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "Todo apagado"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "Color del degradado %1"
+    },
+    "Gradient style": {
+        "Gradient style": "Estilo del degradado"
+    },
+    "Blend": {
+        "Blend": "Fundido"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "Fundido en espejo"
+    },
+    "Scattered": {
+        "Scattered": "Disperso"
+    },
+    "Segments": {
+        "Segments": "Segmentos"
     }
 }

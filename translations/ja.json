@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "すべて消灯"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "グラデーションの色 %1"
+    },
+    "Gradient style": {
+        "Gradient style": "グラデーションのスタイル"
+    },
+    "Blend": {
+        "Blend": "ブレンド"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "ミラーブレンド"
+    },
+    "Scattered": {
+        "Scattered": "ランダム"
+    },
+    "Segments": {
+        "Segments": "セグメント"
     }
 }

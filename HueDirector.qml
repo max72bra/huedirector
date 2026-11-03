@@ -615,6 +615,12 @@ PluginComponent {
                                         const hue = root.hue;
                                         return c => hue?.setColor(lightId, c);
                                     }
+                                    gradientColors: (light?.HueData?.gradient?.points ?? []).map(p => root.rgbColor(root.xyToRgb(p.color.xy.x, p.color.xy.y)))
+                                    applyGradient: {
+                                        const lightId = light?.Id;
+                                        const hue = root.hue;
+                                        return (colors, mode) => hue?.setGradient(lightId, colors, mode);
+                                    }
                                     onExpandToggled: roomPage.expandedLightId = expanded ? "" : light.Id
                                     onToggleRequested: on => root.hue.setResource("light", light.Id, { on: { on: on } })
                                     onBrightnessRequested: value => root.hue.setResource("light", light.Id, { on: { on: true }, dimming: { brightness: value } })

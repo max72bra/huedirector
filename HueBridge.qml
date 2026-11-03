@@ -125,14 +125,15 @@ Item {
 
     // kind: "light" | "grouped_light" | "scene". Debounced per resource, so slider drags send one request.
     // The debounce keeps only the last call, so bodies are merged: a toggle followed by a slider move
-    // within 300 ms sends both. color and color_temperature exclude each other, the latest wins
+    // within 300 ms sends both. color, color_temperature and gradient exclude each other, the latest wins
     // immediate: skip the 300 ms debounce, for sleep/power off where logind gives only a few seconds
     function put(kind, id, body, cb, immediate) {
         const merged = Object.assign({}, pendingBodies[id] ?? {}, body);
-        if (body.color)
-            delete merged.color_temperature;
-        if (body.color_temperature)
-            delete merged.color;
+        for (const k of ["color", "color_temperature", "gradient"])
+            if (body[k])
+                for (const other of ["color", "color_temperature", "gradient"])
+                    if (other !== k)
+                        delete merged[other];
         pendingBodies[id] = merged;
         (putWaiters[id] = putWaiters[id] ?? []).push(cb);
         const sent = Object.assign({}, merged);

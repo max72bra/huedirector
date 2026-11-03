@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "全部关闭"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "渐变颜色 %1"
+    },
+    "Gradient style": {
+        "Gradient style": "渐变样式"
+    },
+    "Blend": {
+        "Blend": "融合"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "镜像融合"
+    },
+    "Scattered": {
+        "Scattered": "散布"
+    },
+    "Segments": {
+        "Segments": "分段"
     }
 }

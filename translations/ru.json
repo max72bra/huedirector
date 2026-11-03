@@ -310,5 +310,23 @@
     },
     "All off": {
         "All off": "Всё выключено"
+    },
+    "Gradient color %1": {
+        "Gradient color %1": "Цвет градиента %1"
+    },
+    "Gradient style": {
+        "Gradient style": "Стиль градиента"
+    },
+    "Blend": {
+        "Blend": "Плавный"
+    },
+    "Mirrored blend": {
+        "Mirrored blend": "Плавный зеркальный"
+    },
+    "Scattered": {
+        "Scattered": "Вразброс"
+    },
+    "Segments": {
+        "Segments": "Сегменты"
     }
 }

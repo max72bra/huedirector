@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+
+- Gradient lights: edit each of the colors along the light (as many as the light supports) and pick the gradient style.
+- The color picker no longer closes the popout.
+
 ## 1.3.0
 
 - Zones: zone cards and pages in the popout, below the rooms; zones as favorite room, favorite light, event rule targets and IPC names.

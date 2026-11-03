@@ -34,6 +34,31 @@ DCard {
         const timed = hd?.timed_effects?.status ?? "no_effect";
         return timed !== "no_effect" ? timed : (hd?.effects?.status ?? "no_effect");
     }
+    // Gradient lights (lightstrips, Play gradient, ...): 2..points_capable colors spread along the light
+    readonly property var gradient: hd?.gradient ?? null
+    // Always as many points as the light declares: a solid color (temperature or hue slider) reports none
+    readonly property int maxPoints: Math.max(2, gradient?.points_capable ?? 5)
+    // Current points as colors, set by the host (HueDirector.xyToRgb)
+    property var gradientColors: []
+    // Reported points repeated to maxPoints; none reported (solid color): the light's current color
+    readonly property var baseColors: {
+        const out = [];
+        for (let i = 0; i < maxPoints; i++)
+            out.push(gradientColors.length ? gradientColors[i % gradientColors.length] : accentColor);
+        return out;
+    }
+    // Same points as baseColors, as the bridge's own xy: sent back untouched (style change, the other points
+    // when one is picked), since an xy -> RGB -> xy round trip clips and shifts the colors.
+    // Solid color: the light's color.xy, also reported in temperature mode; else the swatch color
+    readonly property var basePoints: {
+        const xy = (gradient?.points ?? []).map(p => p.color?.xy).filter(p => p);
+        const solid = hd?.color?.xy;
+        const out = [];
+        for (let i = 0; i < maxPoints; i++)
+            out.push(xy.length ? xy[i % xy.length] : solid ?? baseColors[i]);
+        return out;
+    }
+    readonly property var modeValues: gradient?.mode_values ?? []
     readonly property bool hasColorControls: hasColor || !!colorTemp || effectValues.length > 0
     readonly property color accentColor: currentRgb ? Qt.rgba(currentRgb[0], currentRgb[1], currentRgb[2], 1) : Theme.primary
     readonly property color visibleAccent: Accent.visible(accentColor, Theme.surfaceContainer)
@@ -48,6 +73,9 @@ DCard {
     // function (color) set by the host. A function, not a signal: the color picker calls it after
     // the popout (and this row) may already be gone
     property var applyColor: null
+    // function (points, mode) set by the host, same reason: points are bridge xy {x, y} or colors;
+    // mode "" keeps the current one
+    property var applyGradient: null
 
     implicitHeight: content.implicitHeight + pad * 2
 
@@ -232,15 +260,81 @@ DCard {
                 swatchColor: row.accentColor
                 tooltipText: I18n.trFor("hueDirector", "More colors…")
                 onClicked: {
-                    const picker = PopoutService.colorPickerModal;
-                    if (!picker)
-                        return;
-                    picker.selectedColor = row.accentColor;
-                    picker.pickerTitle = row.light?.Name ?? "";
                     const apply = row.applyColor;
-                    picker.onColorSelectedCallback = c => apply?.(c);
-                    picker.show();
+                    row.openPicker(row.accentColor, c => apply?.(c));
                 }
+            }
+        }
+
+        // Gradient points: click a swatch to pick its color
+        // Icon in the slot of the sliders' start icon, like the thermometer row
+        Item {
+            width: parent.width
+            height: Theme.iconButtonSize
+            visible: row.expanded && !!row.gradient
+
+            DIcon {
+                id: gradientIcon
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                name: "gradient"
+                size: Theme.iconSize
+                color: Theme.surfaceText
+            }
+
+            // Spread over the slider track above (between the start and end icon slots): equal gaps between
+            // the swatches and at both ends
+            Row {
+                id: swatchRow
+                readonly property real swatchSize: Theme.iconSize + Theme.spacingS
+                readonly property real gap: (width - swatchSize * row.baseColors.length) / (row.baseColors.length + 1)
+
+                anchors.left: gradientIcon.right
+                anchors.leftMargin: Theme.spacingM
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - (Theme.iconSize + Theme.spacingM) * 2
+                leftPadding: gap
+                spacing: gap
+
+                Repeater {
+                    model: row.baseColors.length
+
+                    DColorButton {
+                        required property int index
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: swatchRow.swatchSize
+                        height: width
+                        swatchColor: row.baseColors[index] ?? "transparent"
+                        tooltipText: I18n.trFor("hueDirector", "Gradient color %1").arg(index + 1)
+                        onClicked: {
+                            // Captured now: the callback must not depend on this row
+                            const points = row.basePoints.slice();
+                            const i = index;
+                            const apply = row.applyGradient;
+                            row.openPicker(row.baseColors[i], c => {
+                                points[i] = c;
+                                apply?.(points, "");
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // How the points spread along the light. DDropdown works with labels
+        DDropdown {
+            readonly property var modeLabels: row.modeValues.map(v => row.modeLabel(v))
+
+            width: parent.width
+            visible: row.expanded && row.modeValues.length > 1
+            text: I18n.trFor("hueDirector", "Gradient style")
+            options: modeLabels
+            currentValue: row.modeLabel(row.gradient?.mode ?? "")
+            onValueChanged: newValue => {
+                const i = modeLabels.indexOf(newValue);
+                if (i >= 0 && row.modeValues[i] !== row.gradient?.mode)
+                    row.applyGradient?.(row.basePoints, row.modeValues[i]);
             }
         }
 
@@ -261,7 +355,42 @@ DCard {
         }
     }
 
+    // Shell color picker (hex, color area, eyedropper, recent colors). Opening a modal closes every popout
+    // unless the modal has keepPopoutsOpen: the picker is shared, so the flag is set for this use only
+    // and restored when it closes
+    function openPicker(initial, onPicked) {
+        const picker = PopoutService.colorPickerModal;
+        if (!picker)
+            return;
+        const keepBefore = picker.keepPopoutsOpen;
+        const restore = () => {
+            picker.dialogClosed.disconnect(restore);
+            picker.keepPopoutsOpen = keepBefore;
+        };
+        picker.dialogClosed.connect(restore);
+        picker.keepPopoutsOpen = true;
+        picker.selectedColor = initial;
+        picker.pickerTitle = light?.Name ?? "";
+        picker.onColorSelectedCallback = onPicked;
+        picker.show();
+    }
+
     // Literal strings, so the translation tooling can extract them
+    function modeLabel(v) {
+        switch (v) {
+        case "interpolated_palette":
+            return I18n.trFor("hueDirector", "Blend");
+        case "interpolated_palette_mirrored":
+            return I18n.trFor("hueDirector", "Mirrored blend");
+        case "random_pixelated":
+            return I18n.trFor("hueDirector", "Scattered");
+        case "segmented_palette":
+            return I18n.trFor("hueDirector", "Segments");
+        default:
+            return v;
+        }
+    }
+
     function effectLabel(v) {
         switch (v) {
         case "no_effect":
