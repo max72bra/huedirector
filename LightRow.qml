@@ -22,6 +22,8 @@ DCard {
     readonly property bool isOn: hd?.on?.on ?? false
     // Unplugged or out of zigbee range: the bridge still reports the last known state
     readonly property bool reachable: light?.Reachable ?? true
+    // Another app is streaming to it (entertainment area): controls are disabled until it stops
+    readonly property bool streaming: light?.Streaming ?? false
     readonly property var colorTemp: hd?.color_temperature ?? null
     readonly property bool hasColor: !!hd?.color
     // Effects the light supports, then the timed ones (sunrise/sunset), "no_effect" first
@@ -85,6 +87,7 @@ DCard {
     Column {
         id: content
         width: parent.width
+        enabled: !row.streaming
         spacing: Theme.spacingS
 
         Row {
@@ -121,7 +124,7 @@ DCard {
 
                 StyledText {
                     width: parent.width
-                    text: !row.reachable ? I18n.trFor("hueDirector", "Unreachable") : row.isOn ? Math.round(row.hd?.dimming?.brightness ?? 100) + "%" : I18n.trFor("hueDirector", "Off")
+                    text: row.streaming ? I18n.trFor("hueDirector", "In use by another app") : !row.reachable ? I18n.trFor("hueDirector", "Unreachable") : row.isOn ? Math.round(row.hd?.dimming?.brightness ?? 100) + "%" : I18n.trFor("hueDirector", "Off")
                     font.pixelSize: Theme.fontSizeSmall
                     color: row.reachable ? Theme.surfaceVariantText : Theme.error
                 }

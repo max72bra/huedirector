@@ -28,6 +28,7 @@ Automated checks for the wallpaper sampling: `node tests/wallpaper-sync.test.js`
 - [x] `syncSnapshot` missing from `~/.local/state/dms/plugins/hueDirector_state.json`: stopping applies the area's menu (off, leave, warm white, scene); the menu lists only scenes using the area's lights.
 - [x] Restore at startup on: `dms restart` resumes the sync without overwriting the saved previous state. Off: lights untouched at startup.
 - [x] Area started by the Hue Sync app: the card says it is in use and its lights are not touched.
+- [x] While another app streams to an area: its card (switch, slider) and the rows of its lights are disabled and say "In use by another app"; room cards and the other lights still work. `dms ipc call hueDirector on <streamed light>` and `sync <area>` answer "in use by another app"; an event rule on that light is skipped (log). Stopping the stream re-enables everything within ~1 s.
 - [x] Remove the widget from every bar while syncing: after ~3 s the sync stops and restores the lights; `dms ipc call hueDirector sync <area>` answers that the widget is needed.
 - [x] Unreadable wallpaper (video): the card says it can't read the wallpaper after ~5 s.
 - [x] `dms ipc call hueDirector sync <area>` / `syncOff`.

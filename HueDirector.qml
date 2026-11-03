@@ -580,6 +580,8 @@ PluginComponent {
 
                                 width: parent.width
                                 clickable: false
+                                // Another app is streaming to it: hands off until it stops
+                                enabled: !area?.Active
                                 name: area?.Name ?? ""
                                 icon: "tv"
                                 isOn: syncing

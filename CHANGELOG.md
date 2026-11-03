@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.3
+
+- While another app (Hue Sync, a TV box) streams to an entertainment area, its card and the rows of its lights are disabled and say "In use by another app"; event rules, IPC calls and the bar right click aimed at those lights are skipped, and the wallpaper sync leaves them alone. Everything comes back when the stream stops. Rooms, zones and scenes keep working for the other lights.
+
+## 1.5.2
+
+- Tooltips on the icons of scene tiles (active, smart scene, dynamic/pause) and of the light color controls (warm, cool, gradient).
+
 ## 1.5.1
 
 - Adding a reboot or power off rule while a suspend rule exists (or the other way round) now takes effect at once, without restarting the shell.

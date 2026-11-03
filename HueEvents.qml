@@ -301,7 +301,7 @@ PluginComponent {
         for (const id in colorsByLight) {
             const light = lights.find(l => l.Id === id);
             const hd = light?.HueData;
-            if (!hd || !light.Reachable || (!turnOn && !hd.on?.on))
+            if (!hd || !light.Reachable || light.Streaming || (!turnOn && !hd.on?.on))
                 continue;
             const colors = colorsByLight[id];
             const cap = hd.gradient?.points_capable ?? 0;
@@ -327,11 +327,18 @@ PluginComponent {
     readonly property string syncWallpaperPath: syncWallpaper()
     onSyncWallpaperPathChanged: if (syncAreaId) syncTimer.restart()
 
+    // A light another app is streaming to: commands to it are skipped until the stream ends
+    function lightStreaming(id) {
+        return lights.some(l => l.Id === id && l.Streaming);
+    }
+
     // Favorite light, room, zone or whole home (Settings → Favorite light): bar right click and IPC toggle
     function toggleFavorite() {
         const t = hueBridge.parseTarget(pluginData?.favoriteLight);
         if (!t)
             return "no favorite light set";
+        if (t.kind === "light" && lightStreaming(t.id))
+            return "in use by another app";
         setResource(t.kind, t.id, { on: { on: !hueBridge.targetIsOn(t, root) } });
         return "ok";
     }
@@ -491,6 +498,11 @@ PluginComponent {
             done?.();
             return;
         }
+        if (r.kind === "light" && lightStreaming(r.id)) {
+            console.info("Hue Director: event", e, "skipped, light in use by another app");
+            done?.();
+            return;
+        }
         console.info("Hue Director: event", e, "->", r.kind, r.id, r.on ? "on" : "off");
         hueBridge.put(r.kind, r.id, { on: { on: r.on } }, err => {
             if (err === "unreachable" && retries > 0) {
@@ -566,6 +578,8 @@ PluginComponent {
         const t = findTarget(name);
         if (!t)
             return "no room, zone or light named " + name;
+        if (t.kind === "light" && lightStreaming(t.id))
+            return "in use by another app";
         setResource(t.kind, t.id, { on: { on: on } });
         return "ok";
     }
@@ -594,10 +608,12 @@ PluginComponent {
             const a = root.areas.find(r => r.Name.toLowerCase() === area.trim().toLowerCase());
             if (!a)
                 return "no entertainment area named " + area;
+            if (a.Active)
+                return "in use by another app";
             if (!root.syncAvailable)
                 return "wallpaper sync needs the Hue Director widget on a bar";
             root.setSync(a.Id);
-            return a.Active ? "in use by another app" : "ok";
+            return "ok";
         }
 
         function syncOff(): string {
@@ -815,7 +831,8 @@ PluginComponent {
     }
 
     // --- Logout: the shell dies with the session, so a transient user unit bound to graphical-session.target
-    // sends the PUT from its ExecStop. The hook reads logout.action, so rule changes never restart the unit
+    // sends the PUT from its ExecStop. The hook reads logout.action, so rule changes never restart the unit.
+    // shortcut: the hook can't tell a light another app is streaming to, its PUT is sent anyway (the bridge ignores it)
     readonly property string hookScript: "#!/bin/sh\n"
         + "# Hue Director logout action, run by hue-director-session.service (ExecStop) when the graphical session ends\n"
         + "d=$(dirname \"$0\")\n"

@@ -191,7 +191,7 @@ Item {
     // room and zone {Id, Name, Archetype, GroupedLight.HueData, LightIds[], Scenes[] {Id, Name, HueData},
     //       SmartScenes[] {Id, Name, HueData, Current = scene of the active time slot or null}},
     // area {Id, Name, Active, Channels[] {X, Z, Members[] {LightId, Index}}, LightIds[]},
-    // light {Id, Name, Archetype, HueData, Reachable}, homeGroupedId (all lights of the bridge)
+    // light {Id, Name, Archetype, HueData, Reachable, Streaming}, homeGroupedId (all lights of the bridge)
     function normalize(data) {
         const isGroup = rtype => rtype === "room" || rtype === "zone";
         const groupedByOwner = {};
@@ -248,7 +248,9 @@ Item {
             Archetype: l.metadata?.archetype ?? "",
             HueData: l,
             // Lights without a zigbee_connectivity service (e.g. Matter/Wi-Fi) count as reachable
-            Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected"
+            Reachable: (deviceZigbee[l.owner?.rid] ?? "connected") === "connected",
+            // Driven by another app through an entertainment area (Hue Sync, a TV box): commands are ignored
+            Streaming: l.mode === "streaming"
         }));
         // Entertainment areas: only their light positions are used (wallpaper sync), never streamed.
         // x goes left to right, z bottom to top, both -1..1; a gradient strip has one channel per segment
