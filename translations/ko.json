@@ -367,5 +367,26 @@
     },
     "Warm white": {
         "Warm white": "따뜻한 흰색"
+    },
+    "Active": {
+        "Active": "사용 중"
+    },
+    "Smart scene": {
+        "Smart scene": "스마트 장면"
+    },
+    "Dynamic": {
+        "Dynamic": "다이내믹"
+    },
+    "Pause": {
+        "Pause": "일시정지"
+    },
+    "Warm": {
+        "Warm": "따뜻하게"
+    },
+    "Cool": {
+        "Cool": "차갑게"
+    },
+    "Gradient": {
+        "Gradient": "그라데이션"
     }
 }

@@ -367,5 +367,26 @@
     },
     "Warm white": {
         "Warm white": "暖白光"
+    },
+    "Active": {
+        "Active": "已启用"
+    },
+    "Smart scene": {
+        "Smart scene": "智能场景"
+    },
+    "Dynamic": {
+        "Dynamic": "动态"
+    },
+    "Pause": {
+        "Pause": "暂停"
+    },
+    "Warm": {
+        "Warm": "暖光"
+    },
+    "Cool": {
+        "Cool": "冷光"
+    },
+    "Gradient": {
+        "Gradient": "渐变"
     }
 }

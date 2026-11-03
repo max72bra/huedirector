@@ -367,5 +367,26 @@
     },
     "Warm white": {
         "Warm white": "Luce bianca calda"
+    },
+    "Active": {
+        "Active": "Attiva"
+    },
+    "Smart scene": {
+        "Smart scene": "Scena smart"
+    },
+    "Dynamic": {
+        "Dynamic": "Dinamica"
+    },
+    "Pause": {
+        "Pause": "Pausa"
+    },
+    "Warm": {
+        "Warm": "Calda"
+    },
+    "Cool": {
+        "Cool": "Fredda"
+    },
+    "Gradient": {
+        "Gradient": "Gradiente"
     }
 }

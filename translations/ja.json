@@ -367,5 +367,26 @@
     },
     "Warm white": {
         "Warm white": "暖かい白"
+    },
+    "Active": {
+        "Active": "使用中"
+    },
+    "Smart scene": {
+        "Smart scene": "スマートシーン"
+    },
+    "Dynamic": {
+        "Dynamic": "ダイナミック"
+    },
+    "Pause": {
+        "Pause": "一時停止"
+    },
+    "Warm": {
+        "Warm": "暖色"
+    },
+    "Cool": {
+        "Cool": "寒色"
+    },
+    "Gradient": {
+        "Gradient": "グラデーション"
     }
 }

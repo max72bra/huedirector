@@ -83,6 +83,11 @@ Rectangle {
         color: tile.onScrim
     }
 
+    StateLayer {
+        stateColor: tile.onScrim
+        onClicked: tile.activated()
+    }
+
     DIcon {
         anchors.top: parent.top
         anchors.right: parent.right
@@ -91,11 +96,10 @@ Rectangle {
         name: "check_circle"
         size: Theme.iconSizeSmall
         color: tile.onScrim
-    }
 
-    StateLayer {
-        stateColor: tile.onScrim
-        onClicked: tile.activated()
+        IconTip {
+            text: I18n.trFor("hueDirector", "Active")
+        }
     }
 
     Rectangle {
@@ -113,6 +117,10 @@ Rectangle {
             name: "schedule"
             size: Theme.iconSizeSmall
             color: tile.onScrim
+        }
+
+        IconTip {
+            text: I18n.trFor("hueDirector", "Smart scene")
         }
     }
 
@@ -139,6 +147,7 @@ Rectangle {
 
         StateLayer {
             stateColor: tile.onScrim
+            tooltipText: tile.dynamicActive ? I18n.trFor("hueDirector", "Pause") : I18n.trFor("hueDirector", "Dynamic")
             onClicked: tile.dynamicToggled()
         }
     }

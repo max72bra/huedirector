@@ -181,6 +181,10 @@ DCard {
                 name: "thermometer"
                 size: Theme.iconSize
                 color: Theme.surfaceText
+
+                IconTip {
+                    text: I18n.trFor("hueDirector", "Warm")
+                }
             }
 
             HeldSlider {
@@ -212,6 +216,10 @@ DCard {
                 filled: true
                 size: Theme.iconSize
                 color: Theme.surfaceText
+
+                IconTip {
+                    text: I18n.trFor("hueDirector", "Cool")
+                }
             }
         }
 
@@ -283,6 +291,10 @@ DCard {
                 name: "gradient"
                 size: Theme.iconSize
                 color: Theme.surfaceText
+
+                IconTip {
+                    text: I18n.trFor("hueDirector", "Gradient")
+                }
             }
 
             // Spread over the slider track above (between the start and end icon slots): equal gaps between

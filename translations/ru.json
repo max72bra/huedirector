@@ -367,5 +367,26 @@
     },
     "Warm white": {
         "Warm white": "Тёплый белый"
+    },
+    "Active": {
+        "Active": "Активна"
+    },
+    "Smart scene": {
+        "Smart scene": "Умная сцена"
+    },
+    "Dynamic": {
+        "Dynamic": "Динамика"
+    },
+    "Pause": {
+        "Pause": "Пауза"
+    },
+    "Warm": {
+        "Warm": "Тёплый"
+    },
+    "Cool": {
+        "Cool": "Холодный"
+    },
+    "Gradient": {
+        "Gradient": "Градиент"
     }
 }
