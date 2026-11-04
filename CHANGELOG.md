@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.4
+
+- Suspend, resume, reboot and power off rules run reliably again: the logind signals are now read by the plugin itself with `gdbus monitor` (glib2, already installed with the shell), because the Dux Shell server didn't always pass them on. When that happened, the system waited 5 seconds before suspending or powering off, and the resume rule didn't run.
+- Suspend started from the shell no longer waits 5 seconds: the system suspends as soon as the rule has been sent.
+
 ## 1.5.3
 
 - While another app (Hue Sync, a TV box) streams to an entertainment area, its card and the rows of its lights are disabled and say "In use by another app"; event rules, IPC calls and the bar right click aimed at those lights are skipped, and the wallpaper sync leaves them alone. Everything comes back when the stream stops. Rooms, zones and scenes keep working for the other lights.

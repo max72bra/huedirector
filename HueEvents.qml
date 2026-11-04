@@ -645,7 +645,6 @@ PluginComponent {
 
     Component.onCompleted: {
         syncBrightness = PluginService.loadPluginState("hueDirector", "syncBrightness", 70);
-        subscribeShutdown();
         checkLogin();
     }
 
@@ -685,39 +684,28 @@ PluginComponent {
             if (!SessionService.sleepRequested || root.earlySleep)
                 return;
             root.earlySleep = true;
-            root.earlySleepDone = false;
             earlySleepTimeout.restart();
-            root.run("sleep", () => root.sleepRuleDone());
+            // done only skips the debounce: PrepareForSleep releases the inhibitor, not the answer
+            root.run("sleep", () => {});
         }
     }
 
     // --- Suspend / resume. NetworkManager takes the network down as soon as logind announces the sleep
     // (PrepareForSleep), so the rule runs earlier when the shell starts the suspend (power menu, idle):
-    // SessionService.sleepRequested turns true before logind is called. PrepareForSleep then only waits
-    // for that request and releases the inhibitor. Suspends the shell doesn't start (lid, terminal) still
-    // run on PrepareForSleep, racing the network
+    // SessionService.sleepRequested turns true before logind is called. PrepareForSleep then releases
+    // the inhibitor at once: the network is going down, waiting for the answer gains nothing.
+    // Suspends the shell doesn't start (lid, terminal) still run on PrepareForSleep, racing the network
     property bool earlySleep: false
-    property bool earlySleepDone: false
-    property bool sleepPending: false
-
-    function sleepRuleDone() {
-        earlySleepDone = true;
-        if (sleepPending)
-            inhibitor.released = true;
-    }
 
     function onPrepareForSleep(sleeping) {
         if (sleeping) {
-            if (earlySleep && earlySleepDone) {
+            if (earlySleep) {
                 inhibitor.released = true;
-            } else if (earlySleep) {
-                sleepPending = true;
             } else {
                 root.run("sleep", () => inhibitor.released = true);
             }
         } else {
             earlySleep = false;
-            sleepPending = false;
             earlySleepTimeout.stop();
             inhibitor.released = false;
             // 15 attempts, 2 s apart: the network may need a while to come back after resume
@@ -732,68 +720,64 @@ PluginComponent {
         onTriggered: root.earlySleep = false
     }
 
-    // --- Power off / reboot: logind PrepareForShutdownWithMetadata(true, {type}) tells them apart
-    // (systemd >= 256). Older systemd only has PrepareForShutdown(bool): then every shutdown counts as power off.
-    // (false) means the shutdown was cancelled
-    property string shutdownSubscriptionId: ""
+    // --- logind signals, watched with gdbus: the DMS server doesn't always forward PrepareForSleep and
+    // PrepareForShutdown to the shell (lost by some server instances, not others).
+    // PrepareForShutdownWithMetadata(true, {type}) tells power off and reboot apart (systemd >= 256), the
+    // plain PrepareForShutdown(bool) is then ignored: logind sends both. (false) means cancelled or resumed
     property bool shutdownHasMetadata: false
-    property string sleepSubscriptionId: ""
-
-    function subscribeShutdown() {
-        if (!DMSService.capabilities.includes("dbus"))
-            return;
-        if (!sleepSubscriptionId)
-            DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "PrepareForSleep", response => {
-                sleepSubscriptionId = response.result?.subscriptionId ?? "";
-                if (!sleepSubscriptionId)
-                    console.warn("Hue Director: cannot watch suspend:", response.error);
-            });
-        if (shutdownSubscriptionId)
-            return;
-        const subscribe = (member, onFail) => DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", member, response => {
-            const id = response.result?.subscriptionId ?? "";
-            if (id) {
-                shutdownSubscriptionId = id;
-                shutdownHasMetadata = member === "PrepareForShutdownWithMetadata";
-                console.info("Hue Director: watching power off/reboot through", member);
-            } else {
-                onFail(response.error);
-            }
-        });
-        subscribe("PrepareForShutdownWithMetadata", () => subscribe("PrepareForShutdown", error => console.warn("Hue Director: cannot watch power off/reboot:", error)));
-    }
 
     // "reboot" for reboot, kexec and soft-reboot; "shutdown" for poweroff, halt and when the type is unknown
-    function shutdownEvent(body) {
-        if (!shutdownHasMetadata)
-            return "shutdown";
-        // a{sv}: the variant may arrive unwrapped or as an object holding the value
-        const t = body?.[1]?.type;
-        const type = (t !== null && typeof t === "object") ? (t.value ?? t.Value ?? t.data ?? "") : (t ?? "");
-        return ["reboot", "kexec", "soft-reboot"].includes(String(type)) ? "reboot" : "shutdown";
+    function shutdownEvent(type) {
+        return ["reboot", "kexec", "soft-reboot"].includes(type) ? "reboot" : "shutdown";
     }
 
-    Connections {
-        target: DMSService
-        function onCapabilitiesChanged() {
-            root.subscribeShutdown();
+    // line: "/org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForShutdownWithMetadata (true, {'type': <'poweroff'>})"
+    function onLogindLine(line) {
+        if (line === "metadata") {
+            shutdownHasMetadata = true;
+            return;
         }
-        function onDbusSignalReceived(subscriptionId, data) {
-            if (subscriptionId && subscriptionId === root.sleepSubscriptionId) {
-                root.onPrepareForSleep(data?.body?.[0] === true);
-                return;
-            }
-            if (!subscriptionId || subscriptionId !== root.shutdownSubscriptionId)
-                return;
-            console.info("Hue Director: logind shutdown signal", JSON.stringify(data?.body ?? []));
-            if (data?.body?.[0] === true) {
-                Proc.runCommand("hueDirector.events.marker", ["sh", "-c", ": > \"" + root.shutdownMarker + "\""], () => {}, 0);
-                root.run(root.shutdownEvent(data.body), () => inhibitor.released = true);
-            } else {
-                Proc.runCommand("hueDirector.events.marker", ["sh", "-c", "rm -f \"" + root.shutdownMarker + "\""], () => {}, 0);
-                inhibitor.released = false;
-            }
+        const m = /\.Manager\.(PrepareForSleep|PrepareForShutdown|PrepareForShutdownWithMetadata) \((true|false)/.exec(line);
+        if (!m)
+            return;
+        const active = m[2] === "true";
+        if (m[1] === "PrepareForSleep") {
+            onPrepareForSleep(active);
+            return;
         }
+        if ((m[1] === "PrepareForShutdownWithMetadata") !== shutdownHasMetadata)
+            return;
+        console.info("Hue Director: logind", m[1], m[2]);
+        if (active) {
+            Proc.runCommand("hueDirector.events.marker", ["sh", "-c", ": > \"" + root.shutdownMarker + "\""], () => {}, 0);
+            run(shutdownEvent(/'type': <'([^']*)'>/.exec(line)?.[1] ?? ""), () => inhibitor.released = true);
+        } else {
+            Proc.runCommand("hueDirector.events.marker", ["sh", "-c", "rm -f \"" + root.shutdownMarker + "\""], () => {}, 0);
+            inhibitor.released = false;
+        }
+    }
+
+    Process {
+        id: logindMonitor
+        property bool warned: false
+
+        running: !logindRestart.running
+        command: ["sh", "-c", "gdbus introspect --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1 | grep -q PrepareForShutdownWithMetadata && echo metadata\n"
+            + "exec gdbus monitor --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1"]
+        stdout: SplitParser {
+            onRead: line => root.onLogindLine(line)
+        }
+        onExited: exitCode => {
+            if (!warned)
+                console.warn("Hue Director: gdbus monitor exited (" + exitCode + "), sleep and power off rules wait for it to restart");
+            warned = true;
+            logindRestart.restart();
+        }
+    }
+
+    Timer {
+        id: logindRestart
+        interval: 5000
     }
 
     // Also runs on shell exit and logout, when the logout hook must stay. Only a disabled or uninstalled

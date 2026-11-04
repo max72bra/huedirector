@@ -52,7 +52,7 @@ The plugin talks only to your Hue Bridge. The only internet request is bridge di
 - For the wallpaper sync: an entertainment area set up in the Hue app, and the Hue Director widget on a bar
 - Optional: `avahi` (`avahi-browse`), to find the bridge on the local network without going through `discovery.meethue.com`
 
-Automations also use `systemd-inhibit` and `systemd-run` (part of systemd).
+Automations also use `systemd-inhibit`, `systemd-run` and `loginctl` (part of systemd) and `gdbus` (part of glib2, already installed with Dux Shell). See [What runs in the background](#what-runs-in-the-background).
 
 The plugin checks for `curl` and `openssl` when it is enabled. If one is missing, the plugin is not activated and the shell shows what to do.
 
@@ -102,9 +102,22 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 | Login | The shell starts within 2 minutes of the session start (restarting the shell later doesn't count) |
 | Screen locked / unlocked | Dux Shell lock screen |
 | Monitors off / on | Dux Shell power saving turning the monitors off (DPMS) and back on. Monitors turned off by other tools (e.g. hypridle) are not detected |
-| Suspend or hibernate / Resume | Suspend started from Dux Shell (power menu, idle): when the shell requests it, while the network is still up. Other suspends (lid, terminal): logind sleep signal, which may be too late, since NetworkManager takes the network down at the same moment. The system waits up to 5 seconds (logind `InhibitDelayMaxSec`). On resume the rule retries for up to 30 seconds until the network is back |
-| Power off / Reboot | logind shutdown signal, with the same wait. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
+| Suspend or hibernate / Resume | Suspend started from Dux Shell (power menu, idle): when the shell requests it, while the network is still up. The system suspends as soon as the rule has been sent. Other suspends (lid, terminal): logind sleep signal, which may be too late, since NetworkManager takes the network down at the same moment; the system waits up to 5 seconds for the rule (logind `InhibitDelayMaxSec`). On resume the rule retries for up to 30 seconds until the network is back |
+| Power off / Reboot | logind shutdown signal: the system waits until the rule has run, at most 5 seconds. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
 | Logout | A small user service bound to `graphical-session.target` runs the action when the session ends. It needs a systemd-managed session (e.g. uwsm); otherwise logout rules don't run |
+
+### What runs in the background
+
+All of them run as you. The first three run inside the Dux Shell service and stop with it:
+
+| Process | When | What for |
+|---|---|---|
+| `curl ... /eventstream/clip/v2` | While paired | Bridge event stream (live updates). The key is read from `bridge.conf`, never from the command line |
+| `gdbus monitor --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1` | Always | Reads the logind sleep and shutdown signals (`PrepareForSleep`, `PrepareForShutdown`). It only listens and needs no privileges; at start, `gdbus introspect` checks once whether logind can tell reboot from power off. Started again after 5 seconds if it exits |
+| `systemd-inhibit --what=sleep:shutdown --mode=delay ... sleep infinity` | While a suspend, reboot or power off rule is set | Asks logind to wait (at most 5 seconds) before suspending or powering off, so the rule reaches the bridge. Released as soon as the rule has run. Listed by `systemd-inhibit --list` as "Hue Director" |
+| `hue-director-session` (user service) | While a logout rule is set | A separate user service: runs the logout action when the session ends, after the shell has already stopped |
+
+The login rule reads the session start time once, with `loginctl`.
 
 ## Wallpaper sync
 
