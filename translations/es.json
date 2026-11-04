@@ -83,8 +83,8 @@
     "System events": {
         "System events": "Eventos del sistema"
     },
-    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Enciende o apaga una luz, una habitación, una zona o todas las luces cuando ocurre algo en tu sesión. Las reglas de cierre de sesión requieren una sesión gestionada por systemd (p. ej. uwsm). Antes de suspender y apagar, el sistema espera unos segundos a que se ajusten las luces."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": "Enciende o apaga una luz, una habitación, una zona o todas las luces cuando ocurre algo en tu sesión. Las reglas de cierre de sesión requieren una sesión gestionada por systemd (p. ej. uwsm). Las luces se ajustan antes de suspender y apagar: el sistema las espera como máximo unos segundos."
     },
     "Nothing": {
         "Nothing": "Nada"

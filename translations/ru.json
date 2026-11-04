@@ -83,8 +83,8 @@
     "System events": {
         "System events": "Системные события"
     },
-    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "Включайте или выключайте лампу, комнату, зону или все лампы, когда в сеансе что-то происходит. Правила выхода из системы требуют сеанса под управлением systemd (например, uwsm). Перед ждущим режимом и выключением система несколько секунд ждёт, пока лампы будут настроены."
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": "Включайте или выключайте лампу, комнату, зону или все лампы, когда в сеансе что-то происходит. Правила выхода из системы требуют сеанса под управлением systemd (например, uwsm). Лампы настраиваются перед ждущим режимом и выключением: система ждёт их не больше нескольких секунд."
     },
     "Nothing": {
         "Nothing": "Ничего"

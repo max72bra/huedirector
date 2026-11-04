@@ -18,16 +18,21 @@ Item {
     readonly property string confPath: stateDir + "/bridge.conf"
 
     property bool configured: false
-    // Single instance, in the daemon (HueEvents.qml); Proc.runCommand debounces by these ids
+    // Single instance, in the daemon (HueEvents.qml); ids for the Proc calls that may be debounced
     readonly property string procPrefix: "hueDirector.bridge."
     property string ip: ""
 
-    // Bodies waiting for the Proc debounce, per resource id (see put())
+    // Bodies waiting for the debounce, per resource id (see put())
     property var pendingBodies: ({})
-    // Callbacks waiting for the next fetch / for a resource's PUT: the Proc debounce runs only the last
-    // call, so earlier callers (e.g. screen lock then suspend on the same light) are kept here and all answered
+    // Callbacks waiting for the next fetch / for a resource's PUT: the debounce sends only once, so every
+    // caller in the meantime (e.g. screen lock then suspend on the same light) is kept here and answered
     property var fetchWaiters: []
     property var putWaiters: ({})
+    // Resources of the last fetch, updated in place by applyEvents(), and the event stream data that
+    // arrived while a fetch was running: the fetch answer may predate it, so it is applied again on top
+    property var raw: []
+    property var lateEvents: []
+    property bool fetching: false
     // Fade time for on/off and scene recalls in ms (Hue "dynamics"); -1 leaves the bridge default (about 0.4 s).
     // Sliders are not faded: a long fade would lag behind the drag
     property int transitionMs: -1
@@ -89,6 +94,26 @@ Item {
         }, 0);
     }
 
+    // Own debounce: Proc.runCommand answers every run of an id with the latest callback, so two runs in
+    // flight at once (a PUT still running when the next one starts) would answer each other's callers.
+    // Requests run with no Proc id instead, each with its own callback. key -> Timer
+    property var debouncers: ({})
+
+    Component {
+        id: debounceTimer
+        Timer {
+            property var launch: null
+            onTriggered: launch()
+        }
+    }
+
+    function debounced(key, ms, launch) {
+        const t = debouncers[key] ?? (debouncers[key] = debounceTimer.createObject(bridge));
+        t.launch = launch;
+        t.interval = ms;
+        t.restart();
+    }
+
     function curlArgs(path) {
         // path is relative to /clip/v2/, e.g. "resource" or "resource/light/<id>"
         return ["curl", "-K", confPath, "--expand-url", "https://{{ip}}/clip/v2/" + path];
@@ -107,11 +132,26 @@ Item {
     // error "" or "unpaired" or "certchanged" or "unreachable" or a message
     function fetchAll(cb) {
         fetchWaiters.push(cb);
-        Proc.runCommand(procPrefix + "fetch", curlArgs("resource").concat(["-m", "10", "-w", "\n%{http_code}"]), (stdout, exitCode) => {
-            const waiters = fetchWaiters;
-            fetchWaiters = [];
+        // One fetch at a time: a later one starts when it ends (see below)
+        if (!fetching)
+            debounced("fetch", 200, launchFetch);
+    }
+
+    function launchFetch() {
+        const waiters = fetchWaiters;
+        fetchWaiters = [];
+        fetching = true;
+        lateEvents = [];
+        Proc.runCommand(null, curlArgs("resource").concat(["-m", "10", "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+            fetching = false;
             const response = parseResponse(stdout, exitCode);
-            const result = response.error ? null : normalize(response.body?.data ?? []);
+            let result = null;
+            if (!response.error) {
+                raw = response.body?.data ?? [];
+                applyEvents(lateEvents);
+                result = normalize(raw);
+            }
+            lateEvents = [];
             // One failing caller must not keep the others waiting
             for (const w of waiters) {
                 try {
@@ -120,7 +160,42 @@ Item {
                     console.warn("Hue Director: fetch callback failed:", e);
                 }
             }
-        }, 200);
+            if (fetchWaiters.length)
+                debounced("fetch", 200, launchFetch);
+        }, 0);
+    }
+
+    // Event stream entries [{type: "update" | "add" | "delete", data: [{id, type, ...changed fields}]}]
+    // merged into the last fetch. false: something only a new fetch can tell (a resource added, deleted
+    // or not known yet); the caller then fetches
+    function applyEvents(events) {
+        if (fetching)
+            lateEvents = lateEvents.concat(events);
+        const merge = (into, from) => {
+            for (const k in from) {
+                const v = from[k];
+                if (v && typeof v === "object" && !Array.isArray(v) && into[k] && typeof into[k] === "object" && !Array.isArray(into[k]))
+                    merge(into[k], v);
+                else
+                    into[k] = v;
+            }
+        };
+        // Changed resources become new objects: the UI binds to them (LightRow.hd), and an object changed
+        // in place is the same value, so those bindings would never see the change
+        let complete = true;
+        for (const ev of events) {
+            for (const d of ev.data ?? []) {
+                const i = raw.findIndex(x => x.id === d.id);
+                if (ev.type !== "update" || i < 0) {
+                    complete = false;
+                    continue;
+                }
+                const copy = JSON.parse(JSON.stringify(raw[i]));
+                merge(copy, d);
+                raw[i] = copy;
+            }
+        }
+        return complete;
     }
 
     // kind: "light" | "grouped_light" | "scene". Debounced per resource, so slider drags send one request.
@@ -136,27 +211,29 @@ Item {
                         delete merged[other];
         pendingBodies[id] = merged;
         (putWaiters[id] = putWaiters[id] ?? []).push(cb);
-        const sent = Object.assign({}, merged);
-        if (transitionMs >= 0) {
-            // Smart scenes take only an action in recall
-            if (sent.recall && kind === "scene")
-                sent.recall = Object.assign({}, sent.recall, { duration: transitionMs });
-            else if (sent.on && !sent.dimming && !sent.color && !sent.color_temperature && !sent.dynamics)
-                sent.dynamics = { duration: transitionMs };
-        }
-        Proc.runCommand(procPrefix + "put." + id, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(sent), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+        debounced("put." + id, immediate ? 0 : 300, () => {
+            const sent = pendingBodies[id];
+            const waiters = putWaiters[id];
             delete pendingBodies[id];
-            const waiters = putWaiters[id] ?? [];
             delete putWaiters[id];
-            const error = parseResponse(stdout, exitCode).error;
-            for (const w of waiters) {
-                try {
-                    w?.(error);
-                } catch (e) {
-                    console.warn("Hue Director: put callback failed:", e);
-                }
+            if (transitionMs >= 0) {
+                // Smart scenes take only an action in recall
+                if (sent.recall && kind === "scene")
+                    sent.recall = Object.assign({}, sent.recall, { duration: transitionMs });
+                else if (sent.on && !sent.dimming && !sent.color && !sent.color_temperature && !sent.dynamics)
+                    sent.dynamics = { duration: transitionMs };
             }
-        }, immediate ? 0 : 300);
+            Proc.runCommand(null, curlArgs("resource/" + kind + "/" + id).concat(["-m", "10", "-X", "PUT", "-H", "Content-Type: application/json", "--data", JSON.stringify(sent), "-w", "\n%{http_code}"]), (stdout, exitCode) => {
+                const error = parseResponse(stdout, exitCode).error;
+                for (const w of waiters) {
+                    try {
+                        w?.(error);
+                    } catch (e) {
+                        console.warn("Hue Director: put callback failed:", e);
+                    }
+                }
+            }, 0);
+        });
     }
 
     // stdout is the body plus a last line with the HTTP status (-w)

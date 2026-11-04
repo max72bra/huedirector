@@ -18,7 +18,7 @@ function fromRgba(data, w, h) {
 }
 
 // Dominant color of the box around (u, v) (0..1, v = 0 at the top), as [r, g, b] in 0..1.
-// Hue histogram weighted by saturation x value, so a few vivid pixels beat a large dull area;
+// Hue histogram weighted by saturation x value (= max - min), so a few vivid pixels beat a large dull area;
 // the winning bin is averaged. A gray region (no weight) gives its mean color instead
 function dominant(img, u, v) {
     var bins = 12, half = 0.25;
@@ -42,7 +42,7 @@ function dominant(img, u, v) {
                 continue;
             var hue = mx === r ? ((g - bl) / d + 6) % 6 : mx === g ? (bl - r) / d + 2 : (r - g) / d + 4;
             var k = Math.floor(hue / 6 * bins) % bins;
-            var wgt = (d / mx) * mx;
+            var wgt = d;
             weight[k] += wgt;
             sum[k][0] += r * wgt;
             sum[k][1] += g * wgt;

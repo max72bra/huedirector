@@ -73,17 +73,7 @@ PluginComponent {
         hueBridge.fetchAll((result, err) => {
             if (handleError(err))
                 return;
-            // Bridge order is not stable (scenes move after activation): sort everything by name
-            const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
-            result.rooms.concat(result.zones).forEach(r => {
-                r.Scenes.sort(byName);
-                r.SmartScenes.sort(byName);
-            });
-            rooms = result.rooms.sort(byName);
-            zones = result.zones.sort(byName);
-            areas = result.areas.sort(byName);
-            lights = result.lights.sort(byName);
-            homeGroupedId = result.homeGroupedId;
+            publish(result);
             error = "";
             loggedError = "";
             loaded = true;
@@ -92,6 +82,21 @@ PluginComponent {
             startEvents();
             syncAfterRefresh();
         });
+    }
+
+    // A HueBridge.normalize() result into the state the widgets and settings read
+    function publish(result) {
+        // Bridge order is not stable (scenes move after activation): sort everything by name
+        const byName = (a, b) => (a.Name ?? "").localeCompare(b.Name ?? "");
+        result.rooms.concat(result.zones).forEach(r => {
+            r.Scenes.sort(byName);
+            r.SmartScenes.sort(byName);
+        });
+        rooms = result.rooms.sort(byName);
+        zones = result.zones.sort(byName);
+        areas = result.areas.sort(byName);
+        lights = result.lights.sort(byName);
+        homeGroupedId = result.homeGroupedId;
     }
 
     // kind: "light" | "grouped_light" | "scene" | "smart_scene", body: Hue API v2 PUT body.
@@ -444,22 +449,38 @@ PluginComponent {
         }
         stdout: SplitParser {
             // SSE frames: "id: ...", "data: [...]", and ": hi" keepalives.
-            // Any line proves the stream works, keepalives included (quiet homes send no data for long);
-            // the Proc debounce in HueBridge.fetchAll() collapses bursts into one request
+            // Any line proves the stream works, keepalives included (quiet homes send no data for long).
+            // Updates are merged into the last fetch with no request; anything else fetches again
+            // (the debounce in HueBridge.fetchAll() collapses bursts into one request)
             onRead: line => {
                 if (!line.trim())
                     return;
                 root.eventsRestarts = 0;
                 if (!line.startsWith("data:"))
                     return;
-                let relevant = true;
+                let events = null;
                 try {
-                    relevant = JSON.parse(line.slice(5)).some(ev => (ev.data ?? []).some(r => root.watchedTypes.includes(r.type)));
+                    events = JSON.parse(line.slice(5)).filter(ev => (ev.data ?? []).some(r => root.watchedTypes.includes(r.type)));
                 } catch (e) {}
-                if (relevant)
+                if (events && !events.length)
+                    return;
+                if (events && root.loaded && hueBridge.applyEvents(events))
+                    root.publishLater();
+                else
                     root.refresh();
             }
         }
+    }
+
+    // Events come in bursts (a scene changes every light): one rebuild per burst
+    function publishLater() {
+        publishTimer.start();
+    }
+
+    Timer {
+        id: publishTimer
+        interval: 50
+        onTriggered: root.publish(hueBridge.normalize(hueBridge.raw))
     }
 
     Timer {
@@ -648,9 +669,11 @@ PluginComponent {
         checkLogin();
     }
 
-    // --- Login: the daemon also starts on shell restarts, so only a session younger than 2 minutes counts
+    // --- Login: the daemon also starts on shell restarts, so only a session younger than 2 minutes counts.
+    // Wall clock on both sides (session Timestamp in µs from logind): a monotonic start against
+    // /proc/uptime would count the time spent suspended before the login
     function checkLogin() {
-        Proc.runCommand("hueDirector.events.login", ["sh", "-c", "s=$(loginctl show-session \"$XDG_SESSION_ID\" -p TimestampMonotonic --value) || exit 1; u=$(cut -d' ' -f1 /proc/uptime); awk -v s=\"$s\" -v u=\"$u\" 'BEGIN{exit !(u - s/1e6 < 120)}'"], (stdout, exitCode) => {
+        Proc.runCommand("hueDirector.events.login", ["sh", "-c", "p=$(busctl call org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager GetSession s \"$XDG_SESSION_ID\" | cut -d'\"' -f2) && t=$(busctl get-property org.freedesktop.login1 \"$p\" org.freedesktop.login1.Session Timestamp | cut -d' ' -f2) && [ $(( $(date +%s) - t / 1000000 )) -lt 120 ]"], (stdout, exitCode) => {
             if (exitCode === 0)
                 loginTimer.start();
         }, 0);
@@ -749,8 +772,9 @@ PluginComponent {
             return;
         console.info("Hue Director: logind", m[1], m[2]);
         if (active) {
-            Proc.runCommand("hueDirector.events.marker", ["sh", "-c", ": > \"" + root.shutdownMarker + "\""], () => {}, 0);
-            run(shutdownEvent(/'type': <'([^']*)'>/.exec(line)?.[1] ?? ""), () => inhibitor.released = true);
+            // Marker first: releasing the inhibitor lets the session end, and the logout hook must find it
+            const event = shutdownEvent(/'type': <'([^']*)'>/.exec(line)?.[1] ?? "");
+            Proc.runCommand("hueDirector.events.marker", ["sh", "-c", ": > \"" + root.shutdownMarker + "\""], () => run(event, () => inhibitor.released = true), 0);
         } else {
             Proc.runCommand("hueDirector.events.marker", ["sh", "-c", "rm -f \"" + root.shutdownMarker + "\""], () => {}, 0);
             inhibitor.released = false;
@@ -795,7 +819,8 @@ PluginComponent {
         id: inhibitor
 
         property bool released: false
-        readonly property string what: [root.rule("sleep") ? "sleep" : "", root.rule("shutdown") || root.rule("reboot") ? "shutdown" : ""].filter(w => w).join(":")
+        // A logout rule alone also holds "shutdown": the shutdown marker must be written before the session ends
+        readonly property string what: [root.rule("sleep") ? "sleep" : "", root.rule("shutdown") || root.rule("reboot") || root.rule("logout") ? "shutdown" : ""].filter(w => w).join(":")
         readonly property bool wanted: what !== "" && hueBridge.configured && !released
 
         // Paused while inhibitorRestart runs, then started again by this binding
@@ -833,9 +858,16 @@ PluginComponent {
         + "systemctl --user is-active --quiet hue-director-session && exit 0\n"
         + "exec systemd-run --user --quiet --unit=hue-director-session --description='Hue Director logout action' -p PartOf=graphical-session.target -p After=graphical-session.target -p Type=oneshot -p RemainAfterExit=yes -p \"ExecStop=/bin/sh '$1/logout-hook.sh'\" /bin/true\n"
 
-    function syncLogoutHook() {
+    // Path and body of the logout PUT, "" without a rule: the hook is set up again only when this changes
+    readonly property var logoutAction: {
         const r = hueBridge.configured ? rule("logout") : null;
-        Proc.runCommand("hueDirector.events.logout", ["sh", "-c", syncScript, "sh", hueBridge.stateDir, hookScript, r ? "resource/" + r.kind + "/" + r.id : "", r ? JSON.stringify({ on: { on: r.on } }) : ""], (stdout, exitCode) => {
+        return r ? ["resource/" + r.kind + "/" + r.id, JSON.stringify({ on: { on: r.on } })] : ["", ""];
+    }
+    readonly property string logoutKey: logoutAction.join("\n")
+    onLogoutKeyChanged: syncLogoutHook()
+
+    function syncLogoutHook() {
+        Proc.runCommand("hueDirector.events.logout", ["sh", "-c", syncScript, "sh", hueBridge.stateDir, hookScript, logoutAction[0], logoutAction[1]], (stdout, exitCode) => {
             if (exitCode === 3)
                 console.warn("Hue Director: no systemd graphical session, the logout rule can't run");
             else if (exitCode !== 0)
@@ -843,5 +875,4 @@ PluginComponent {
         }, 500);
     }
 
-    onPluginDataChanged: syncLogoutHook()
 }

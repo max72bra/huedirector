@@ -42,7 +42,11 @@ Automated checks for the wallpaper sampling: `node tests/wallpaper-sync.test.js`
 - [x] Suspend from the power menu: no 5 s pause before suspending (journal: no "inhibitor timeout is reached"); resume rule runs.
 - [x] Power off: journal of the previous boot shows `Hue Director: logind PrepareForShutdownWithMetadata true`, then `event shutdown done`, with no "inhibitor timeout is reached".
 - [x] `systemctl --user status dms` shows one `gdbus monitor --system --dest org.freedesktop.login1 ...`; `kill` it: a new one starts within ~5 s.
-- [x] `pgrep -af systemd-inhibit` shows the inhibitor only while a sleep, reboot or power off rule is set.
+- [x] `pgrep -af systemd-inhibit` shows the inhibitor only while a sleep, reboot, power off or logout rule is set.
+- [x] Logout rule only, power off: the logout rule doesn't run.
+- [x] Login rule after suspending at the login screen for more than 2 minutes: the rule runs.
+- [x] Slider drag and Hue app changes: the popout follows; `journalctl --user -f` shows no new fetch per change (only on added/removed lights or scenes).
+- [x] Two lights with the same name: both can be picked in the event and favorite dropdowns.
 
 ## Uninstall
 - [x] "Forget bridge" (two clicks) removes the state folder and the `hue-director-session` unit, and does not switch any light.

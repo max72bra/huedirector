@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.5
+
+- The login rule also runs when the computer was suspended before logging in (the time spent suspended was counted as time since login).
+- A logout rule no longer runs, now and then, on power off or reboot.
+- Two requests on the same light no longer answer each other: a power off rule could let the system go before its command had reached the bridge. An older bridge state no longer replaces a newer one for a moment.
+- Changes from the bridge (Hue app, switches, sliders) are applied without reading the whole bridge again, which only happens when lights, rooms or scenes are added or removed.
+- Settings: lights, rooms, zones or scenes with the same name get a number, so each can be picked; the logout service is set up again only when the logout rule changes.
+
 ## 1.5.4
 
 - Suspend, resume, reboot and power off rules run reliably again: the logind signals are now read by the plugin itself with `gdbus monitor` (glib2, already installed with the shell), because the Dux Shell server didn't always pass them on. When that happened, the system waited 5 seconds before suspending or powering off, and the resume rule didn't run.

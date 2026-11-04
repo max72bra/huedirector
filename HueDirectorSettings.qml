@@ -27,16 +27,26 @@ PluginSettings {
     onOptionsKeyChanged: rebuildOptions()
     Component.onCompleted: rebuildOptions()
 
+    // Dropdowns work with labels: same-named entries (the bridge allows them) get " (2)", " (3)", ...
+    // or only the first could be picked
+    function uniqueLabels(options) {
+        const seen = {};
+        return options.map(o => {
+            const n = seen[o.label] = (seen[o.label] ?? 0) + 1;
+            return n > 1 ? Object.assign({}, o, { label: o.label + " (" + n + ")" }) : o;
+        });
+    }
+
     function rebuildOptions() {
         const byLabel = (a, b) => a.label.localeCompare(b.label);
         const zoneLabel = name => I18n.trFor("hueDirector", "Zone · %1").arg(name);
-        roomOptions = (hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort(byLabel)
-            .concat((hue?.zones ?? []).map(z => ({ label: zoneLabel(z.Name), value: z.Id })).sort(byLabel));
+        roomOptions = uniqueLabels((hue?.rooms ?? []).map(r => ({ label: r.Name, value: r.Id })).sort(byLabel)
+            .concat((hue?.zones ?? []).map(z => ({ label: zoneLabel(z.Name), value: z.Id })).sort(byLabel)));
         const rooms = (hue?.rooms ?? []).filter(r => r.GroupedLight).map(r => ({ label: I18n.trFor("hueDirector", "Room · %1").arg(r.Name), value: "grouped_light:" + r.GroupedLight.HueData.id })).sort(byLabel);
         const zones = (hue?.zones ?? []).filter(z => z.GroupedLight).map(z => ({ label: zoneLabel(z.Name), value: "grouped_light:" + z.GroupedLight.HueData.id })).sort(byLabel);
         const lights = (hue?.lights ?? []).map(l => ({ label: I18n.trFor("hueDirector", "Light · %1").arg(l.Name), value: "light:" + l.Id })).sort(byLabel);
         const home = hue?.homeGroupedId ? [{ label: I18n.trFor("hueDirector", "All lights"), value: "grouped_light:" + hue.homeGroupedId }] : [];
-        targetOptions = home.concat(rooms, zones, lights);
+        targetOptions = uniqueLabels(home.concat(rooms, zones, lights));
         // Only scenes that set at least one light of the area. Labels are matched back to values, so
         // a scene name found in several rooms gets the room name
         const groups = (hue?.rooms ?? []).concat(hue?.zones ?? []);
@@ -44,7 +54,7 @@ PluginSettings {
         for (const area of hue?.areas ?? []) {
             const scenes = [].concat(...groups.map(r => r.Scenes.filter(sc => (sc.HueData.actions ?? []).some(a => area.LightIds.includes(a.target?.rid))).map(sc => ({ name: sc.Name, group: r.Name, value: "scene:" + sc.Id }))));
             const label = sc => scenes.filter(o => o.name === sc.name).length > 1 ? "%1 (%2)".arg(sc.name).arg(sc.group) : sc.name;
-            endOptions[area.Id] = [{ label: I18n.trFor("hueDirector", "Turn off"), value: "off" }, { label: I18n.trFor("hueDirector", "Leave as is"), value: "none" }, { label: I18n.trFor("hueDirector", "Warm white"), value: "warm" }].concat(scenes.map(sc => ({ label: label(sc), value: sc.value })).sort(byLabel));
+            endOptions[area.Id] = uniqueLabels([{ label: I18n.trFor("hueDirector", "Turn off"), value: "off" }, { label: I18n.trFor("hueDirector", "Leave as is"), value: "none" }, { label: I18n.trFor("hueDirector", "Warm white"), value: "warm" }].concat(scenes.map(sc => ({ label: label(sc), value: sc.value })).sort(byLabel)));
         }
         syncEndOptions = endOptions;
         syncAreas = (hue?.areas ?? []).map(a => ({ Id: a.Id, Name: a.Name }));
@@ -53,18 +63,19 @@ PluginSettings {
     // Width of the on/off buttons column (two small icon buttons)
     readonly property real actionColumnWidth: Theme.minimumTouchTargetSize * 2 + Theme.spacingL
 
+    // Default actions come from the daemon (HueEvents.defaultActions)
     readonly property var events: [
-        { key: "login", label: I18n.trFor("hueDirector", "Login"), def: "on" },
-        { key: "logout", label: I18n.trFor("hueDirector", "Logout"), def: "off" },
-        { key: "lock", label: I18n.trFor("hueDirector", "Screen locked"), def: "off" },
-        { key: "unlock", label: I18n.trFor("hueDirector", "Screen unlocked"), def: "on" },
-        { key: "monitorOff", label: I18n.trFor("hueDirector", "Monitors off"), def: "off" },
-        { key: "monitorOn", label: I18n.trFor("hueDirector", "Monitors on"), def: "on" },
-        { key: "sleep", label: I18n.trFor("hueDirector", "Suspend or hibernate"), def: "off" },
-        { key: "resume", label: I18n.trFor("hueDirector", "Resume from sleep"), def: "on" },
+        { key: "login", label: I18n.trFor("hueDirector", "Login") },
+        { key: "logout", label: I18n.trFor("hueDirector", "Logout") },
+        { key: "lock", label: I18n.trFor("hueDirector", "Screen locked") },
+        { key: "unlock", label: I18n.trFor("hueDirector", "Screen unlocked") },
+        { key: "monitorOff", label: I18n.trFor("hueDirector", "Monitors off") },
+        { key: "monitorOn", label: I18n.trFor("hueDirector", "Monitors on") },
+        { key: "sleep", label: I18n.trFor("hueDirector", "Suspend or hibernate") },
+        { key: "resume", label: I18n.trFor("hueDirector", "Resume from sleep") },
         // Told apart from power off only on systemd >= 256 (PrepareForShutdownWithMetadata); older systems run "Power off" for both
-        { key: "reboot", label: I18n.trFor("hueDirector", "Reboot"), def: "off" },
-        { key: "shutdown", label: I18n.trFor("hueDirector", "Power off"), def: "off" }
+        { key: "reboot", label: I18n.trFor("hueDirector", "Reboot") },
+        { key: "shutdown", label: I18n.trFor("hueDirector", "Power off") }
     ]
 
     StyledText {
@@ -201,7 +212,7 @@ PluginSettings {
     StyledText {
         width: parent.width
         wrapMode: Text.WordWrap
-        text: I18n.trFor("hueDirector", "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.")
+        text: I18n.trFor("hueDirector", "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.")
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
     }
@@ -276,7 +287,7 @@ PluginSettings {
                     { text: I18n.trFor("hueDirector", "Turn on"), icon: "lightbulb" },
                     { text: I18n.trFor("hueDirector", "Turn off"), icon: "light_off" }
                 ]
-                currentIndex: root.loadValue(eventRow.actionKey, eventRow.modelData.def) === "on" ? 0 : 1
+                currentIndex: root.loadValue(eventRow.actionKey, root.hue?.defaultActions?.[eventRow.modelData.key] ?? "off") === "on" ? 0 : 1
                 onSelectionChanged: (index, selected) => {
                     if (selected)
                         root.saveValue(eventRow.actionKey, index === 0 ? "on" : "off");

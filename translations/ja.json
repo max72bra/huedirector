@@ -83,8 +83,8 @@
     "System events": {
         "System events": "システムイベント"
     },
-    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": {
-        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). Before suspend and power off the system waits a few seconds for the lights to be set.": "セッションで何かが起きたときに、ライト・部屋・ゾーン・すべてのライトを点灯または消灯します。ログアウトのルールには systemd が管理するセッション（uwsm など）が必要です。スリープや電源オフの前に、システムはライトの設定のため数秒待機します。"
+    "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": {
+        "Turn a light, a room, a zone or all lights on or off when something happens in your session. Logout rules need a systemd-managed session (e.g. uwsm). The lights are set before suspend and power off: the system waits for them at most a few seconds.": "セッションで何かが起きたときに、ライト・部屋・ゾーン・すべてのライトを点灯または消灯します。ログアウトのルールには systemd が管理するセッション（uwsm など）が必要です。スリープや電源オフの前にライトを設定します。システムが待機するのは最大で数秒です。"
     },
     "Nothing": {
         "Nothing": "なし"
