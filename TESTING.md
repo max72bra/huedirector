@@ -18,6 +18,7 @@ Automated checks for the wallpaper sampling: `node tests/wallpaper-sync.test.js`
 - [x] Changes made from the Hue app show up within a second.
 - [x] Bridge powered off at shell start, then powered on: red icon, then normal state without restarting the shell.
 - [x] Locale switch (Settings → Locale) retranslates the plugin.
+- [x] Room page Effect menu: an effect starts on every light that supports it and the menu shows it; lights with different effects show "No effect", and choosing it stops them all; a light used by another app is not touched.
 - [x] Gradient light on: its room/zone card shows its colors along the card (mirrored style: first point in the middle), in pastel tones; no gradient light on: flat tint as before.
 
 ## Wallpaper sync (an entertainment area with a gradient strip and a plain lamp)

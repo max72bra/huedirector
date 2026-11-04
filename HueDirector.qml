@@ -232,6 +232,40 @@ PluginComponent {
         return roomIcons[archetype] ?? "meeting_room";
     }
 
+    // Effect labels for LightRow and the room page. Literal strings, so the translation tooling can extract them
+    function effectLabel(v) {
+        switch (v) {
+        case "no_effect":
+            return I18n.trFor("hueDirector", "No effect");
+        case "candle":
+            return I18n.trFor("hueDirector", "Candle");
+        case "fire":
+            return I18n.trFor("hueDirector", "Fireplace");
+        case "prism":
+            return I18n.trFor("hueDirector", "Prism");
+        case "sparkle":
+            return I18n.trFor("hueDirector", "Sparkle");
+        case "opal":
+            return I18n.trFor("hueDirector", "Opal");
+        case "glisten":
+            return I18n.trFor("hueDirector", "Glisten");
+        case "underwater":
+            return I18n.trFor("hueDirector", "Underwater");
+        case "cosmos":
+            return I18n.trFor("hueDirector", "Cosmos");
+        case "sunbeam":
+            return I18n.trFor("hueDirector", "Sunbeam");
+        case "enchant":
+            return I18n.trFor("hueDirector", "Enchant");
+        case "sunrise":
+            return I18n.trFor("hueDirector", "Sunrise");
+        case "sunset":
+            return I18n.trFor("hueDirector", "Sunset");
+        default:
+            return v;
+        }
+    }
+
     // Hue light archetypes by family (hue_lightstrip_pc, pendant_round, ...); fallback lightbulb
     function lightIcon(archetype) {
         const a = archetype ?? "";
@@ -620,6 +654,29 @@ PluginComponent {
                         property string pendingSceneId: ""
                         // One light at a time shows its color controls
                         property string expandedLightId: ""
+                        // Effects any light of the room supports, not only the shared ones (mixed models
+                        // often share none); then the timed ones (sunrise/sunset), "no_effect" first.
+                        // grouped_light ignores effects: they are sent light by light
+                        readonly property var effectValues: {
+                            const regular = [], timed = [];
+                            for (const l of roomLights) {
+                                for (const e of l.HueData?.effects?.effect_values ?? [])
+                                    if (e !== "no_effect" && !regular.includes(e))
+                                        regular.push(e);
+                                for (const e of l.HueData?.timed_effects?.effect_values ?? [])
+                                    if (e !== "no_effect" && !timed.includes(e))
+                                        timed.push(e);
+                            }
+                            return regular.length || timed.length ? ["no_effect"].concat(regular, timed) : [];
+                        }
+                        // The effect every light with effects is running; different ones show "no_effect"
+                        readonly property string currentEffect: {
+                            const running = roomLights.filter(l => l.HueData?.effects || l.HueData?.timed_effects).map(l => {
+                                const timed = l.HueData?.timed_effects?.status ?? "no_effect";
+                                return timed !== "no_effect" ? timed : (l.HueData?.effects?.status ?? "no_effect");
+                            });
+                            return running.length && running.every(e => e === running[0]) ? running[0] : "no_effect";
+                        }
 
                         onActiveSceneIdChanged: if (activeSceneId === pendingSceneId) pendingSceneId = ""
 
@@ -742,6 +799,26 @@ PluginComponent {
                             }
                         }
 
+                        // Room-wide effect: sent to each light that supports it, skipping the ones another app streams to.
+                        // "no_effect" goes to every light with effects. Picking the shown value sends it again, which
+                        // also clears a mix of different effects (shown as "no_effect")
+                        DDropdown {
+                            width: parent.width
+                            visible: roomPage.effectValues.length > 0
+                            text: I18n.trFor("hueDirector", "Effect")
+                            options: roomPage.effectValues.map(v => root.effectLabel(v))
+                            optionValues: roomPage.effectValues
+                            currentValue: roomPage.currentEffect
+                            onValueChanged: value => {
+                                for (const l of roomPage.roomLights) {
+                                    const hd = l.HueData;
+                                    const supported = (hd?.effects?.effect_values ?? []).concat(hd?.timed_effects?.effect_values ?? []);
+                                    if (!l.Streaming && supported.includes(value))
+                                        root.hue.setEffect(l, value);
+                                }
+                            }
+                        }
+
                         StyledText {
                             visible: roomPage.roomLights.length > 0
                             text: I18n.trFor("hueDirector", "Lights")
@@ -764,6 +841,7 @@ PluginComponent {
                                     width: parent.width
                                     light: roomPage.roomLights[index]
                                     icon: root.lightIcon(light?.Archetype)
+                                    effectLabel: root.effectLabel
                                     currentRgb: root.lightRgb(light)
                                     expanded: roomPage.expandedLightId === light?.Id
                                     // The color picker may answer after the popout is gone: the daemon outlives it

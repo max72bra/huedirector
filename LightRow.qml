@@ -75,6 +75,8 @@ DCard {
     signal identifyRequested
     // value: an entry of effectValues ("no_effect" stops both regular and timed effects)
     signal effectRequested(string value)
+    // function (effect value) -> label, set by the host (HueDirector.effectLabel, shared with the room page)
+    property var effectLabel: v => v
     // function (color) set by the host. A function, not a signal: the color picker calls it after
     // the popout (and this row) may already be gone
     property var applyColor: null
@@ -404,39 +406,6 @@ DCard {
             return I18n.trFor("hueDirector", "Scattered");
         case "segmented_palette":
             return I18n.trFor("hueDirector", "Segments");
-        default:
-            return v;
-        }
-    }
-
-    function effectLabel(v) {
-        switch (v) {
-        case "no_effect":
-            return I18n.trFor("hueDirector", "No effect");
-        case "candle":
-            return I18n.trFor("hueDirector", "Candle");
-        case "fire":
-            return I18n.trFor("hueDirector", "Fireplace");
-        case "prism":
-            return I18n.trFor("hueDirector", "Prism");
-        case "sparkle":
-            return I18n.trFor("hueDirector", "Sparkle");
-        case "opal":
-            return I18n.trFor("hueDirector", "Opal");
-        case "glisten":
-            return I18n.trFor("hueDirector", "Glisten");
-        case "underwater":
-            return I18n.trFor("hueDirector", "Underwater");
-        case "cosmos":
-            return I18n.trFor("hueDirector", "Cosmos");
-        case "sunbeam":
-            return I18n.trFor("hueDirector", "Sunbeam");
-        case "enchant":
-            return I18n.trFor("hueDirector", "Enchant");
-        case "sunrise":
-            return I18n.trFor("hueDirector", "Sunrise");
-        case "sunset":
-            return I18n.trFor("hueDirector", "Sunset");
         default:
             return v;
         }

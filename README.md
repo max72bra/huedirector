@@ -20,6 +20,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
   - **Scenes** as tiles painted with each scene's own colors. The current scene is marked, also when the bridge no longer reports it active (it is recognized from the lights' state).
   - **Dynamic scenes**: scenes with a color palette have a play button that keeps their colors slowly cycling.
   - **Smart scenes** (a different scene for each time of day, from the Hue app) are marked with a clock; click to start or stop them.
+  - **Effect** for the whole room: one menu with every effect its lights support (candle, fireplace, ..., sunrise, sunset), applied to each light that has it.
   - **Lights**: switch, brightness, and a mark on unreachable lights (unplugged or out of range).
 - **Light controls** (palette button on a light): color temperature in Kelvin, a rainbow hue slider, the shell color picker for any exact color (hex, color area, eyedropper, recent colors), and a menu of light effects (candle, fireplace, prism, sparkle, ...) with a 30-minute sunrise or sunset.
 - **Gradient lights** (lightstrips, Play gradient, ...): one color for each point the light supports (5 on current models), each set with the color picker, and the gradient style (blend, mirrored blend, scattered, segments) when the light offers more than one.

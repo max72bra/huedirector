@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.6
+
+- Room and zone pages have an Effect menu: it lists every effect the room's lights support and applies the chosen one to each light that has it (the bridge ignores effects sent to a whole room). Lights in use by another app are skipped. It shows the running effect when all the lights share it, otherwise "No effect"; choosing "No effect" stops them all.
+
 ## 1.5.5
 
 - The login rule also runs when the computer was suspended before logging in (the time spent suspended was counted as time since login).
