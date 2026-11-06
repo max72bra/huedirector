@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "그라데이션"
+    },
+    "Dim": {
+        "Dim": "어둡게"
+    },
+    "Night mode on": {
+        "Night mode on": "야간 모드 켜짐"
+    },
+    "Night mode off": {
+        "Night mode off": "야간 모드 꺼짐"
+    },
+    "User idle": {
+        "User idle": "사용자 자리 비움"
+    },
+    "Idle after": {
+        "Idle after": "자리 비움 시간"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "사용자 자리 비움 규칙을 실행하기 전 입력이 없는 시간(분)"
+    },
+    "Dim to": {
+        "Dim to": "어둡게 할 비율"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "각 조명의 현재 밝기에 대한 비율입니다. 돌아오면 복원됩니다(그동안 조명이 변경된 경우 제외)"
     }
 }

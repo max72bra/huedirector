@@ -60,8 +60,10 @@ PluginSettings {
         syncAreas = (hue?.areas ?? []).map(a => ({ Id: a.Id, Name: a.Name }));
     }
 
-    // Width of the on/off buttons column (two small icon buttons)
-    readonly property real actionColumnWidth: Theme.minimumTouchTargetSize * 2 + Theme.spacingL
+    // Narrower than the stock small button (56): four fit next to the dropdown on the idle row
+    readonly property int actionButtonWidth: 40
+    // Width of the action buttons column: the same on every row (idle has four), so the dropdowns line up
+    readonly property real actionColumnWidth: actionButtonWidth * 4 + Theme.spacingL
 
     // Default actions come from the daemon (HueEvents.defaultActions)
     readonly property var events: [
@@ -75,7 +77,10 @@ PluginSettings {
         { key: "resume", label: I18n.trFor("hueDirector", "Resume from sleep") },
         // Told apart from power off only on systemd >= 256 (PrepareForShutdownWithMetadata); older systems run "Power off" for both
         { key: "reboot", label: I18n.trFor("hueDirector", "Reboot") },
-        { key: "shutdown", label: I18n.trFor("hueDirector", "Power off") }
+        { key: "shutdown", label: I18n.trFor("hueDirector", "Power off") },
+        { key: "nightOn", label: I18n.trFor("hueDirector", "Night mode on") },
+        { key: "nightOff", label: I18n.trFor("hueDirector", "Night mode off") },
+        { key: "idle", label: I18n.trFor("hueDirector", "User idle") }
     ]
 
     StyledText {
@@ -274,25 +279,50 @@ PluginSettings {
                 }
             }
 
-            // Index 0 = turn on, 1 = turn off; saved like SelectionSetting does (PluginSettings.saveValue)
+            // Saved like SelectionSetting does (PluginSettings.saveValue)
             DButtonGroup {
                 id: actionGroup
+                readonly property var actionValues: eventRow.modelData.key === "idle" ? ["on", "off", "warm", "dim"] : ["on", "off", "warm"]
                 anchors.right: parent.right
                 anchors.verticalCenter: targetSetting.verticalCenter
                 iconOnly: true
                 checkEnabled: false
                 arrowKeysSelect: false
                 size: "small"
+                minButtonWidth: root.actionButtonWidth
+                buttonPadding: Theme.spacingS
                 model: [
                     { text: I18n.trFor("hueDirector", "Turn on"), icon: "lightbulb" },
-                    { text: I18n.trFor("hueDirector", "Turn off"), icon: "light_off" }
-                ]
-                currentIndex: root.loadValue(eventRow.actionKey, root.hue?.defaultActions?.[eventRow.modelData.key] ?? "off") === "on" ? 0 : 1
+                    { text: I18n.trFor("hueDirector", "Turn off"), icon: "light_off" },
+                    { text: I18n.trFor("hueDirector", "Warm white"), icon: "wb_incandescent" },
+                    { text: I18n.trFor("hueDirector", "Dim"), icon: "brightness_low" }
+                ].slice(0, actionValues.length)
+                currentIndex: Math.max(0, actionValues.indexOf(root.loadValue(eventRow.actionKey, root.hue?.defaultActions?.[eventRow.modelData.key] ?? "off")))
                 onSelectionChanged: (index, selected) => {
                     if (selected)
-                        root.saveValue(eventRow.actionKey, index === 0 ? "on" : "off");
+                        root.saveValue(eventRow.actionKey, actionValues[index]);
                 }
             }
         }
+    }
+
+    SliderSetting {
+        settingKey: "idleMinutes"
+        label: I18n.trFor("hueDirector", "Idle after")
+        description: I18n.trFor("hueDirector", "Minutes without input before the User idle rule runs")
+        defaultValue: 5
+        minimum: 1
+        maximum: 60
+        unit: "min"
+    }
+
+    SliderSetting {
+        settingKey: "dimPercent"
+        label: I18n.trFor("hueDirector", "Dim to")
+        description: I18n.trFor("hueDirector", "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile")
+        defaultValue: 30
+        minimum: 5
+        maximum: 90
+        unit: "%"
     }
 }

@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "Gradiente"
+    },
+    "Dim": {
+        "Dim": "Attenua"
+    },
+    "Night mode on": {
+        "Night mode on": "Modalità notte attiva"
+    },
+    "Night mode off": {
+        "Night mode off": "Modalità notte disattiva"
+    },
+    "User idle": {
+        "User idle": "Utente inattivo"
+    },
+    "Idle after": {
+        "Idle after": "Inattivo dopo"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "Minuti senza input prima che venga eseguita la regola Utente inattivo"
+    },
+    "Dim to": {
+        "Dim to": "Attenua a"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "Quota della luminosità attuale di ogni luce. Torna al tuo rientro, a meno che la luce non sia stata cambiata nel frattempo"
     }
 }

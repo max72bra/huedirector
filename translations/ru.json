@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "Градиент"
+    },
+    "Dim": {
+        "Dim": "Приглушить"
+    },
+    "Night mode on": {
+        "Night mode on": "Ночной режим включён"
+    },
+    "Night mode off": {
+        "Night mode off": "Ночной режим выключен"
+    },
+    "User idle": {
+        "User idle": "Пользователь неактивен"
+    },
+    "Idle after": {
+        "Idle after": "Неактивность после"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "Минут без ввода до запуска правила «Пользователь неактивен»"
+    },
+    "Dim to": {
+        "Dim to": "Приглушить до"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "Доля текущей яркости каждого источника. Яркость вернётся, когда вы вернётесь, если свет за это время не меняли"
     }
 }

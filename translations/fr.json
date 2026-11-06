@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "Dégradé"
+    },
+    "Dim": {
+        "Dim": "Atténuer"
+    },
+    "Night mode on": {
+        "Night mode on": "Mode nuit activé"
+    },
+    "Night mode off": {
+        "Night mode off": "Mode nuit désactivé"
+    },
+    "User idle": {
+        "User idle": "Utilisateur inactif"
+    },
+    "Idle after": {
+        "Idle after": "Inactif après"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "Minutes sans activité avant l'exécution de la règle Utilisateur inactif"
+    },
+    "Dim to": {
+        "Dim to": "Atténuer à"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "Part de la luminosité actuelle de chaque lumière. Elle revient à votre retour, sauf si la lumière a été modifiée entre-temps"
     }
 }

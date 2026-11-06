@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.2
+
+- New event rules: night mode on, night mode off and user idle. Fullscreen and excluded apps pausing night mode don't run them.
+- New rule action: warm white (2700 K), on every event.
+- User idle can dim: each light that is on goes to a share of its own brightness (Settings → Dim to, default 30%) and returns when you are back, unless it was changed meanwhile. Settings → Idle after sets the wait, default 5 minutes.
+
 ## 1.6.1
 
 - Effects from keybindings: `dms ipc call hueDirector effect <target> <name>` starts an effect on a light, room, zone or `all` (every room), `off` stops it. Lights without that effect or in use by another app are skipped.

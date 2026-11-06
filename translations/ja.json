@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "グラデーション"
+    },
+    "Dim": {
+        "Dim": "減光"
+    },
+    "Night mode on": {
+        "Night mode on": "ナイトモードオン"
+    },
+    "Night mode off": {
+        "Night mode off": "ナイトモードオフ"
+    },
+    "User idle": {
+        "User idle": "ユーザー離席"
+    },
+    "Idle after": {
+        "Idle after": "離席までの時間"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "ユーザー離席ルールを実行するまでの無操作時間(分)"
+    },
+    "Dim to": {
+        "Dim to": "減光の割合"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "各ライトの現在の明るさに対する割合です。戻ると元に戻ります(その間にライトを変更した場合を除く)"
     }
 }

@@ -51,6 +51,10 @@ Automated checks for the wallpaper sampling: `node tests/wallpaper-sync.test.js`
 - [x] Login rule after suspending at the login screen for more than 2 minutes: the rule runs.
 - [x] Slider drag and Hue app changes: the popout follows; `journalctl --user -f` shows no new fetch per change (only on added/removed lights or scenes).
 - [x] Two lights with the same name: both can be picked in the event and favorite dropdowns.
+- [x] Warm white on an event rule and on the logout rule: lights go to 2700 K. Stored `on`/`off` rules still work.
+- [x] Night mode toggle in the shell runs Night mode on/off; with the schedule on, the rules run at the start of night and day; `dms restart` runs neither; a fullscreen or excluded app changes nothing.
+- [x] Idle after 1 min with lights at different brightness: each goes to Dim to % of its own value, off lights stay off; mouse move brings them back. A light changed during idle isn't restored, the others are.
+- [x] Idle inhibited (shell toggle): no dim. Idle then suspend: brightness back after resume.
 
 ## Uninstall
 - [x] "Forget bridge" (two clicks) removes the state folder and the `hue-director-session` unit, and does not switch any light.

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import qs.Common
 import qs.Services
 import qs.Modules.Plugins
@@ -11,7 +12,7 @@ import "WallpaperSync.js" as WallpaperSync
 // the polling and every command, shared with the widgets and the settings through
 // PluginService.pluginDaemonInstances["hueDirector"]; it also runs the "System events" rules and the IPC.
 // Rule per event: pluginData.event_<e>_target ("" | "grouped_light:<id>" | "light:<id>") and
-// pluginData.event_<e>_action ("on" | "off", default in defaultActions)
+// pluginData.event_<e>_action ("on" | "off" | "warm", "dim" on idle; default in defaultActions)
 PluginComponent {
     id: root
 
@@ -548,7 +549,7 @@ PluginComponent {
     }
 
     readonly property var defaultActions: ({
-            login: "on", lock: "off", unlock: "on", monitorOff: "off", monitorOn: "on", logout: "off", sleep: "off", resume: "on", shutdown: "off", reboot: "off"
+            login: "on", lock: "off", unlock: "on", monitorOff: "off", monitorOn: "on", logout: "off", sleep: "off", resume: "on", shutdown: "off", reboot: "off", nightOn: "warm", nightOff: "on", idle: "dim"
         })
 
     // shutdown marker: power off/reboot also end the graphical session, the logout hook must then stay quiet
@@ -558,7 +559,14 @@ PluginComponent {
         const t = hueBridge.parseTarget(pluginData?.["event_" + e + "_target"]);
         if (!t)
             return null;
-        return { kind: t.kind, id: t.id, on: (pluginData?.["event_" + e + "_action"] ?? defaultActions[e]) === "on" };
+        return { kind: t.kind, id: t.id, action: pluginData?.["event_" + e + "_action"] ?? defaultActions[e] };
+    }
+
+    // 2700 K, as the sync end "warm"
+    function actionBody(action) {
+        if (action === "warm")
+            return { on: { on: true }, color_temperature: { mirek: 370 } };
+        return { on: { on: action === "on" } };
     }
 
     // done() is always called, also when there is no rule, so sleep/shutdown can release the inhibitor.
@@ -575,8 +583,13 @@ PluginComponent {
             done?.();
             return;
         }
-        console.info("Hue Director: event", e, "->", r.kind, r.id, r.on ? "on" : "off");
-        hueBridge.put(r.kind, r.id, { on: { on: r.on } }, err => {
+        console.info("Hue Director: event", e, "->", r.kind, r.id, r.action);
+        if (r.action === "dim") {
+            dimTarget(r);
+            done?.();
+            return;
+        }
+        hueBridge.put(r.kind, r.id, actionBody(r.action), err => {
             if (err === "unreachable" && retries > 0) {
                 retryLater(() => run(e, done, retries - 1));
                 return;
@@ -587,6 +600,84 @@ PluginComponent {
                 console.info("Hue Director: event", e, "done");
             done?.();
         }, !!done);
+    }
+
+    // --- Idle: dim each light to a share of its own brightness, so lights already low don't get brighter.
+    // shortcut: dimmed lives in memory, a shell restart during idle leaves the lights dimmed; persist it if that matters
+    // light id -> { from, to }
+    property var dimmed: ({})
+    property int dimRetries: 0
+
+    function dimTarget(t) {
+        const ids = t.kind === "light" ? [t.id] : t.id === homeGroupedId ? lights.map(l => l.Id) : (rooms.concat(zones).find(r => r.GroupedLight?.HueData?.id === t.id)?.LightIds ?? []);
+        const pct = pluginData?.dimPercent ?? 30;
+        for (const l of lights.filter(l => ids.includes(l.Id) && l.Reachable && !l.Streaming && l.HueData?.on?.on && l.HueData?.dimming && !dimmed[l.Id])) {
+            const from = l.HueData.dimming.brightness;
+            const to = Math.max(1, Math.round(from * pct / 100));
+            dimmed[l.Id] = { from: from, to: to };
+            setResource("light", l.Id, { dimming: { brightness: to } });
+        }
+    }
+
+    // Only lights still at the dimmed value (±2, the bridge's rounding): any other was changed meanwhile.
+    // retries: after an idle that ended in a suspend the network comes back later
+    function restoreDim(retries) {
+        const saved = dimmed;
+        dimmed = ({});
+        for (const id in saved) {
+            const l = lights.find(x => x.Id === id);
+            if (!l || l.Streaming || Math.abs((l.HueData?.dimming?.brightness ?? -100) - saved[id].to) > 2)
+                continue;
+            hueBridge.put("light", id, { dimming: { brightness: saved[id].from } }, err => {
+                if (err === "unreachable" && retries > 0) {
+                    dimmed[id] = saved[id];
+                    dimRetries = retries - 1;
+                    dimRetryTimer.restart();
+                } else {
+                    handleError(err);
+                }
+            });
+        }
+    }
+
+    Timer {
+        id: dimRetryTimer
+        interval: 2000
+        onTriggered: root.restoreDim(root.dimRetries)
+    }
+
+    // Gated on the shell's inhibit state too: the compositor's goes inactive with a hidden bar (see IdleService)
+    IdleMonitor {
+        enabled: hueBridge.configured && !!root.rule("idle") && !SessionService.idleInhibited
+        timeout: (root.pluginData?.idleMinutes ?? 5) * 60
+        respectInhibitors: true
+        onIsIdleChanged: {
+            if (isIdle)
+                root.run("idle");
+            else
+                root.restoreDim(15);
+        }
+        onEnabledChanged: {
+            if (!enabled)
+                root.restoreDim(15);
+        }
+    }
+
+    // --- Night mode. With the schedule on, nightModeEnabled stays true all day and gammaIsDay tells the period.
+    // Pauses are ignored on purpose: fullscreen and excluded apps must not change the lights
+    readonly property bool nightActive: NightModeService.nightModeEnabled && (!SessionData.nightModeAutoEnabled || !NightModeService.gammaIsDay)
+    // Both values load after startup: those first changes aren't events
+    property bool nightArmed: false
+
+    onNightActiveChanged: {
+        if (nightArmed)
+            run(nightActive ? "nightOn" : "nightOff", null, 15);
+    }
+
+    Timer {
+        interval: 10000
+        running: true
+        onTriggered: root.nightArmed = true
     }
 
     // One pending retry at a time is enough: events of the same kind replace each other
@@ -945,7 +1036,7 @@ PluginComponent {
     // Path and body of the logout PUT, "" without a rule: the hook is set up again only when this changes
     readonly property var logoutAction: {
         const r = hueBridge.configured ? rule("logout") : null;
-        return r ? ["resource/" + r.kind + "/" + r.id, JSON.stringify({ on: { on: r.on } })] : ["", ""];
+        return r ? ["resource/" + r.kind + "/" + r.id, JSON.stringify(actionBody(r.action))] : ["", ""];
     }
     readonly property string logoutKey: logoutAction.join("\n")
     onLogoutKeyChanged: syncLogoutHook()

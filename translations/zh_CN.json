@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "渐变"
+    },
+    "Dim": {
+        "Dim": "调暗"
+    },
+    "Night mode on": {
+        "Night mode on": "夜间模式开启"
+    },
+    "Night mode off": {
+        "Night mode off": "夜间模式关闭"
+    },
+    "User idle": {
+        "User idle": "用户空闲"
+    },
+    "Idle after": {
+        "Idle after": "空闲时间"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "运行“用户空闲”规则前无操作的分钟数"
+    },
+    "Dim to": {
+        "Dim to": "调暗至"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "每盏灯当前亮度的比例。您回来时恢复,除非灯光在此期间已被更改"
     }
 }

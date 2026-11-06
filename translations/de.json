@@ -388,5 +388,29 @@
     },
     "Gradient": {
         "Gradient": "Verlauf"
+    },
+    "Dim": {
+        "Dim": "Dimmen"
+    },
+    "Night mode on": {
+        "Night mode on": "Nachtmodus ein"
+    },
+    "Night mode off": {
+        "Night mode off": "Nachtmodus aus"
+    },
+    "User idle": {
+        "User idle": "Benutzer inaktiv"
+    },
+    "Idle after": {
+        "Idle after": "Inaktiv nach"
+    },
+    "Minutes without input before the User idle rule runs": {
+        "Minutes without input before the User idle rule runs": "Minuten ohne Eingabe, bevor die Regel „Benutzer inaktiv“ ausgeführt wird"
+    },
+    "Dim to": {
+        "Dim to": "Dimmen auf"
+    },
+    "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": {
+        "Share of each light's current brightness. It comes back when you do, unless the light was changed meanwhile": "Anteil der aktuellen Helligkeit jeder Lampe. Sie kehrt zurück, wenn du zurückkommst, außer die Lampe wurde inzwischen geändert"
     }
 }

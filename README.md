@@ -27,7 +27,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 - **Identify**: makes a light pulse its brightness twice in 2.5 seconds, then restores it, so you can tell which lamp it is.
 
 ### Session events
-- Turn a light, a room, a zone or all lights on or off when you **log in or out**, **lock or unlock** the screen, when the **monitors turn off or on**, on **suspend and resume**, on **reboot** and on **power off**. See [Automations](#automations).
+- Turn a light, a room, a zone or all lights on or off, or set them to warm white, when you **log in or out**, **lock or unlock** the screen, when the **monitors turn off or on**, on **suspend and resume**, on **reboot**, on **power off**, and when **night mode** turns on or off. Dim them while you are **idle**. See [Automations](#automations).
 
 ### Everywhere
 - **Live updates**: changes made from the Hue app or from switches show up within a second, through the bridge event stream; if the stream fails, the plugin polls every 30 seconds.
@@ -96,7 +96,7 @@ The plugin looks for the bridge on your network automatically. If it can't find 
 
 ## Automations
 
-In Settings → Plugins → Hue Director → **System events**, pick for each event what to switch (nothing, all lights, a room or a light) and whether to turn it on or off.
+In Settings → Plugins → Hue Director → **System events**, pick for each event what to switch (nothing, all lights, a room or a light) and the action: turn on, turn off or warm white (2700 K). User idle also has **Dim**.
 
 | Event | How it is detected |
 |---|---|
@@ -106,6 +106,10 @@ In Settings → Plugins → Hue Director → **System events**, pick for each ev
 | Suspend or hibernate / Resume | Suspend started from Dux Shell (power menu, idle): when the shell requests it, while the network is still up. The system suspends as soon as the rule has been sent. Other suspends (lid, terminal): logind sleep signal, which may be too late, since NetworkManager takes the network down at the same moment; the system waits up to 5 seconds for the rule (logind `InhibitDelayMaxSec`). On resume the rule retries for up to 30 seconds until the network is back |
 | Power off / Reboot | logind shutdown signal: the system waits until the rule has run, at most 5 seconds. Power off and reboot are told apart on systemd 256 or newer; on older systems the Power off rule runs for both |
 | Logout | A small user service bound to `graphical-session.target` runs the action when the session ends. It needs a systemd-managed session (e.g. uwsm); otherwise logout rules don't run. Power off and reboot end the session too, but run only their own rules |
+| Night mode on / off | Dux Shell night mode turning on or off; with its schedule on, the start of the night and of the day. Pauses for fullscreen or excluded apps don't count, and neither does the state at shell start |
+| User idle | No input for the **Idle after** minutes (Settings), unless something inhibits idle |
+
+**Dim** brings each light that is on to a share of its own brightness (**Dim to**, default 30%: 80% becomes 24%, 20% becomes 6%), so lights keep their differences and low lights don't get brighter. It works light by light on rooms and zones too. When you are back each light returns to its brightness, unless it was changed meanwhile. The other actions on User idle are not undone. Restarting the shell during idle leaves the lights dimmed.
 
 ### What runs in the background
 
