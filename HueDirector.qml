@@ -377,6 +377,7 @@ PluginComponent {
             implicitWidth: pillRow.implicitWidth
             implicitHeight: pillRow.implicitHeight
             acceptedButtons: Qt.NoButton
+            cursorShape: Qt.PointingHandCursor
             onWheel: wheel => root.pillWheel(wheel)
 
             Row {
@@ -406,6 +407,7 @@ PluginComponent {
             implicitWidth: pillColumn.implicitWidth
             implicitHeight: pillColumn.implicitHeight
             acceptedButtons: Qt.NoButton
+            cursorShape: Qt.PointingHandCursor
             onWheel: wheel => root.pillWheel(wheel)
 
             Column {

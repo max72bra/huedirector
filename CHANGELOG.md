@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.3
+
+- The cursor on the bar widget's icon and count is a pointing hand again (it had become an arrow in 1.6.0).
+
 ## 1.6.2
 
 - New event rules: night mode on, night mode off and user idle. Fullscreen and excluded apps pausing night mode don't run them.
