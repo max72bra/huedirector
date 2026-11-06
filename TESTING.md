@@ -18,6 +18,8 @@ Automated checks for the wallpaper sampling: `node tests/wallpaper-sync.test.js`
 - [x] Changes made from the Hue app show up within a second.
 - [x] Bridge powered off at shell start, then powered on: red icon, then normal state without restarting the shell.
 - [x] Locale switch (Settings → Locale) retranslates the plugin.
+- [x] `dms ipc call hueDirector brightness <room> 30`, `+10`, `-- -10` on a room, a light and `all`. On a target that is off, `+10` turns it on at 10% and `-- -10` leaves it off. An unknown target, `abc` and `150` answer with the error; a plug answers "not dimmable", a streamed light "in use by another app".
+- [x] Wheel on the bar icon, horizontal and vertical bar, mouse and touchpad: the favorite changes 10% per notch, 5 fast notches are one request (+50). Left and right click still work. With no favorite set, the wheel switches workspace as before.
 - [x] Room page Effect menu: an effect starts on every light that supports it and the menu shows it; lights with different effects show "No effect", and choosing it stops them all; a light used by another app is not touched.
 - [x] Gradient light on: its room/zone card shows its colors along the card (mirrored style: first point in the middle), in pastel tones; no gradient light on: flat tint as before.
 

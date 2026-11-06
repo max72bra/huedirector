@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0
+
+- Brightness from keybindings and the bar: `dms ipc call hueDirector brightness <target> <value>` takes `50`, `+10` or `-- -10`, and the mouse wheel on the widget's icon changes the favorite light by 10% per notch. Fast notches are sent as one request. A step up turns on a target that is off; lights in use by another app are skipped.
+
 ## 1.5.6
 
 - Room and zone pages have an Effect menu: it lists every effect the room's lights support and applies the chosen one to each light that has it (the bridge ignores effects sent to a whole room). Lights in use by another app are skipped. It shows the running effect when all the lights share it, otherwise "No effect"; choosing "No effect" stops them all.

@@ -353,44 +353,79 @@ PluginComponent {
         return out;
     }
 
+    // Touchpads send fractions of a notch (120)
+    property real wheelAccum: 0
+
+    // 10% per notch on the favorite. Without one the event stays unaccepted: the bar switches workspace
+    function pillWheel(wheel) {
+        if (!wheel.angleDelta.y || !hue?.pluginData?.favoriteLight) {
+            wheel.accepted = false;
+            return;
+        }
+        wheelAccum += wheel.angleDelta.y;
+        const notches = Math.trunc(wheelAccum / 120);
+        if (!notches)
+            return;
+        wheelAccum -= notches * 120;
+        hue.wheelFavorite(notches * 10);
+    }
+
+    // shortcut: the wheel area covers the icon and the count, not the pill padding (PluginComponent doesn't
+    // forward BarPill.wheel); there the bar still switches workspace, until the shell exposes that signal
     horizontalBarPill: Component {
-        Row {
-            spacing: Theme.spacingXS
+        MouseArea {
+            implicitWidth: pillRow.implicitWidth
+            implicitHeight: pillRow.implicitHeight
+            acceptedButtons: Qt.NoButton
+            onWheel: wheel => root.pillWheel(wheel)
 
-            DIcon {
-                anchors.verticalCenter: parent.verticalCenter
-                name: root.pillIcon
-                size: root.iconSize
-                color: root.pillColor
-            }
+            Row {
+                id: pillRow
+                spacing: Theme.spacingXS
 
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.showLightCount && root.pillLightsOn > 0
-                text: root.pillLightsOn
-                color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeSmall
+                DIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: root.pillIcon
+                    size: root.iconSize
+                    color: root.pillColor
+                }
+
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.showLightCount && root.pillLightsOn > 0
+                    text: root.pillLightsOn
+                    color: Theme.surfaceText
+                    font.pixelSize: Theme.fontSizeSmall
+                }
             }
         }
     }
 
     verticalBarPill: Component {
-        Column {
-            spacing: Theme.spacingXS
+        MouseArea {
+            implicitWidth: pillColumn.implicitWidth
+            implicitHeight: pillColumn.implicitHeight
+            acceptedButtons: Qt.NoButton
+            onWheel: wheel => root.pillWheel(wheel)
 
-            DIcon {
-                anchors.horizontalCenter: parent.horizontalCenter
-                name: root.pillIcon
-                size: root.iconSize
-                color: root.pillColor
-            }
+            Column {
+                id: pillColumn
+                spacing: Theme.spacingXS
 
-            StyledText {
-                anchors.horizontalCenter: parent.horizontalCenter
-                visible: root.showLightCount && root.pillLightsOn > 0
-                text: root.pillLightsOn
-                color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeSmall
+                DIcon {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    name: root.pillIcon
+                    size: root.iconSize
+                    color: root.pillColor
+                }
+
+                StyledText {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: root.showLightCount && root.pillLightsOn > 0
+                    text: root.pillLightsOn
+                    color: Theme.surfaceText
+                    font.pixelSize: Theme.fontSizeSmall
+                }
             }
         }
     }

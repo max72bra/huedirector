@@ -348,6 +348,47 @@ PluginComponent {
         return "ok";
     }
 
+    // Why a brightness command can't go to a target, "" when it can. Plugs have no dimming and the bridge
+    // would answer with an error; the home group isn't in rooms or zones and counts as dimmable
+    function brightnessBlocked(t) {
+        if (t.kind === "light" && lightStreaming(t.id))
+            return "in use by another app";
+        const hd = t.kind === "light" ? lights.find(l => l.Id === t.id)?.HueData : rooms.concat(zones).find(r => r.GroupedLight?.HueData?.id === t.id)?.GroupedLight.HueData;
+        return hd && !hd.dimming ? "not dimmable" : "";
+    }
+
+    function setBrightness(t, value) {
+        const blocked = brightnessBlocked(t);
+        if (blocked)
+            return blocked;
+        setResource(t.kind, t.id, { on: { on: true }, dimming: { brightness: value } });
+        return "ok";
+    }
+
+    // delta in points, signed. put() keeps only the last body of a burst, so a step adds to what is still
+    // waiting: 5 fast wheel notches are one +50 request
+    function stepBrightness(t, delta) {
+        const blocked = brightnessBlocked(t);
+        if (blocked)
+            return blocked;
+        const pending = hueBridge.pendingBodies[t.id];
+        if (pending?.dimming)
+            return setBrightness(t, Math.max(1, Math.min(100, pending.dimming.brightness + delta)));
+        if (!(pending?.on?.on ?? hueBridge.targetIsOn(t, root)))
+            return delta > 0 ? setBrightness(t, Math.min(100, delta)) : "ok";
+        const waiting = pending?.dimming_delta;
+        const sum = delta + (waiting ? (waiting.action === "up" ? 1 : -1) * waiting.brightness_delta : 0);
+        setResource(t.kind, t.id, { dimming_delta: { action: sum < 0 ? "down" : "up", brightness_delta: Math.min(100, Math.abs(sum)) } });
+        return "ok";
+    }
+
+    // Bar wheel on the favorite light, room, zone or whole home
+    function wheelFavorite(delta) {
+        const t = hueBridge.parseTarget(pluginData?.favoriteLight);
+        if (t && !ipcReady())
+            stepBrightness(t, delta);
+    }
+
     // Timed effects (sunrise/sunset) need a duration: 30 minutes, like the Hue app default.
     // "no_effect" clears both kinds, since only one of them can be running
     function setEffect(light, value) {
@@ -605,6 +646,18 @@ PluginComponent {
         return "ok";
     }
 
+    // value: "50" absolute, "+10" or "-10" relative
+    function setTargetBrightness(name, value) {
+        const t = findTarget(name);
+        if (!t)
+            return "no room, zone or light named " + name;
+        const m = /^([+-]?)(\d+)$/.exec((value ?? "").trim());
+        const n = m ? parseInt(m[2]) : -1;
+        if (n < 0 || n > 100)
+            return "brightness must be 0-100, +n or -n";
+        return m[1] ? stepBrightness(t, m[1] === "+" ? n : -n) : setBrightness(t, n);
+    }
+
     IpcHandler {
         target: "hueDirector"
 
@@ -619,6 +672,11 @@ PluginComponent {
 
         function off(target: string): string {
             return root.ipcReady() || root.setTarget(target, false);
+        }
+
+        // value: "50", "+10" or "-10"
+        function brightness(target: string, value: string): string {
+            return root.ipcReady() || root.setTargetBrightness(target, value);
         }
 
         // Wallpaper sync on an entertainment area (name, case-insensitive), or off

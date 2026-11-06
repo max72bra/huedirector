@@ -209,6 +209,9 @@ Item {
                 for (const other of ["color", "color_temperature", "gradient"])
                     if (other !== k)
                         delete merged[other];
+        // An absolute brightness replaces a step still waiting
+        if (body.dimming)
+            delete merged.dimming_delta;
         pendingBodies[id] = merged;
         (putWaiters[id] = putWaiters[id] ?? []).push(cb);
         debounced("put." + id, immediate ? 0 : 300, () => {
