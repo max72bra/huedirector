@@ -844,14 +844,7 @@ PluginComponent {
                             options: roomPage.effectValues.map(v => root.effectLabel(v))
                             optionValues: roomPage.effectValues
                             currentValue: roomPage.currentEffect
-                            onValueChanged: value => {
-                                for (const l of roomPage.roomLights) {
-                                    const hd = l.HueData;
-                                    const supported = (hd?.effects?.effect_values ?? []).concat(hd?.timed_effects?.effect_values ?? []);
-                                    if (!l.Streaming && supported.includes(value))
-                                        root.hue.setEffect(l, value);
-                                }
-                            }
+                            onValueChanged: value => root.hue.setGroupEffect(roomPage.room, value)
                         }
 
                         StyledText {

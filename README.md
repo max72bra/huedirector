@@ -32,7 +32,7 @@ Works with Dux Shell >= 2.0.0 (formerly DankMaterialShell).
 ### Everywhere
 - **Live updates**: changes made from the Hue app or from switches show up within a second, through the bridge event stream; if the stream fails, the plugin polls every 30 seconds.
 - **Fade time** for switching lights and scenes, and **dynamic scene speed**, in the settings.
-- **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | brightness | scene | sync | syncOff`. See [Command line and keybindings](#command-line-and-keybindings).
+- **Command line and keybindings**: `dms ipc call hueDirector toggle | on | off | brightness | effect | scene | sync | syncOff`. See [Command line and keybindings](#command-line-and-keybindings).
 - **One connection to the bridge** for the whole shell, also with a bar on every monitor.
 - **No external Hue tools**: the plugin talks to the bridge directly (Hue API v2), with in-shell pairing and certificate pinning.
 - **Translations**: English, French, German, Italian, Japanese, Korean, Russian, Simplified Chinese, Spanish.
@@ -160,6 +160,7 @@ The plugin answers `dms ipc` calls, so you can bind lights to keys:
 | `dms ipc call hueDirector on <target>` | Turns on `all`, a room, a zone or a light, by name (rooms win over zones with the same name) |
 | `dms ipc call hueDirector off <target>` | Turns it off |
 | `dms ipc call hueDirector brightness <target> <value>` | Sets the brightness: `50` (turns the target on), `+10` or `-- -10` (relative; a step up turns on a target that is off, a step down leaves it off) |
+| `dms ipc call hueDirector effect <target> <name>` | Starts an effect on each light of the target that supports it: `candle`, `fire`, `prism`, `sparkle`, `opal`, `glisten`, `underwater`, `cosmos`, `sunbeam`, `enchant`, `sunrise`, `sunset`; `off` stops it. `all` means every room |
 | `dms ipc call hueDirector scene <name>` | Activates a scene; use `Room/Scene` (or `Zone/Scene`) when several rooms or zones have a scene with that name |
 | `dms ipc call hueDirector sync <area>` | Starts the [wallpaper sync](#wallpaper-sync) on an entertainment area, by name |
 | `dms ipc call hueDirector syncOff` | Stops the wallpaper sync |

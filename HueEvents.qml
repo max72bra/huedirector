@@ -405,6 +405,16 @@ PluginComponent {
         setResource("light", light.Id, body);
     }
 
+    // Effect on each light of a group that supports it (the bridge ignores effects on grouped_light), skipping
+    // the ones another app streams to. group: {Name, LightIds}. Answers like the IPC calls
+    function setGroupEffect(group, value) {
+        const capable = lights.filter(l => (group?.LightIds ?? []).includes(l.Id) && (l.HueData?.effects?.effect_values ?? []).concat(l.HueData?.timed_effects?.effect_values ?? []).includes(value));
+        const free = capable.filter(l => !l.Streaming);
+        for (const l of free)
+            setEffect(l, value);
+        return !capable.length ? "effect not supported by " + group?.Name : free.length ? "ok" : "in use by another app";
+    }
+
     // Soft blink: two brightness pulses in 2.5 s (4 steps of 625 ms, each a 600 ms fade), then back to the
     // light's previous state. Hue "breathe" can't be stopped and runs far longer on some lights.
     // Steps go straight to the bridge: the event stream updates the UI, no refresh per step
@@ -658,6 +668,17 @@ PluginComponent {
         return m[1] ? stepBrightness(t, m[1] === "+" ? n : -n) : setBrightness(t, n);
     }
 
+    // effect: bridge value (candle, fire, sunrise, ...) or "off"
+    function setTargetEffect(name, effect) {
+        const t = findTarget(name);
+        if (!t)
+            return "no room, zone or light named " + name;
+        const n = (effect ?? "").trim().toLowerCase();
+        // shortcut: "all" covers the lights in a room, not those only in a zone or in neither
+        const group = t.kind === "light" ? { Name: name, LightIds: [t.id] } : t.id === homeGroupedId ? { Name: name, LightIds: [].concat(...rooms.map(r => r.LightIds)) } : rooms.concat(zones).find(r => r.GroupedLight?.HueData?.id === t.id);
+        return setGroupEffect(group, n === "off" ? "no_effect" : n);
+    }
+
     IpcHandler {
         target: "hueDirector"
 
@@ -677,6 +698,11 @@ PluginComponent {
         // value: "50", "+10" or "-10"
         function brightness(target: string, value: string): string {
             return root.ipcReady() || root.setTargetBrightness(target, value);
+        }
+
+        // effect: bridge value (candle, fire, sunrise, ...) or "off"
+        function effect(target: string, name: string): string {
+            return root.ipcReady() || root.setTargetEffect(target, name);
         }
 
         // Wallpaper sync on an entertainment area (name, case-insensitive), or off

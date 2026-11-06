@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1
+
+- Effects from keybindings: `dms ipc call hueDirector effect <target> <name>` starts an effect on a light, room, zone or `all` (every room), `off` stops it. Lights without that effect or in use by another app are skipped.
+
 ## 1.6.0
 
 - Brightness from keybindings and the bar: `dms ipc call hueDirector brightness <target> <value>` takes `50`, `+10` or `-- -10`, and the mouse wheel on the widget's icon changes the favorite light by 10% per notch. Fast notches are sent as one request. A step up turns on a target that is off; lights in use by another app are skipped.

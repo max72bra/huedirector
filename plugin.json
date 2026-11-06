@@ -3,7 +3,7 @@
     "id": "hueDirector",
     "name": "Hue Director",
     "description": "Control Philips Hue lights, rooms and scenes from the Dux Shell bar, with wallpaper sync on entertainment areas and automations on login, lock, monitor power, sleep, logout, reboot and power off. Talks to the Hue Bridge on the local network (API v2). Pairing finds the bridge through mDNS with avahi-browse (optional) or, if that finds nothing and no IP is entered, through discovery.meethue.com.",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "author": "maxb",
     "type": "composite",
     "capabilities": [
